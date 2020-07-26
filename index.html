@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>ofcr.se</title>
+  <title>ofcr.se by Benjamin Tan</title>
   <meta name="description" content="ofcr.se is Benjamin Tan’s homepage.">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
@@ -14,17 +14,27 @@
     }
 
     body {
-      font-size: 1em;
-      max-width: 768px;
+      max-width: 600px;
       margin: 20px auto;
       padding: 0 60px;
-      line-height: 1.3;
+      font-size: 1em;
+      line-height: 1.5;
+    }
+
+    a {
+      color: #222;
+      text-decoration: underline;
+      transition: all 0.3s ease-in-out;
+    }
+
+    a:hover {
+      color: #ADC153;
     }
 
     #heading {
+      margin: 100px 0 10px;
       font-style: italic;
       font-size: 3em;
-      margin: 100px 0 10px;
     }
 
     .dot {
@@ -38,6 +48,15 @@
 
     .browserupgrade a:hover {
       color: #222;
+    }
+
+    #description {
+      font-size: 1.5em;
+    }
+
+    #description .name,
+    #description .intuitive {
+      transition: all 0.3s ease-in;
     }
 
     .findme {
@@ -60,14 +79,9 @@
 
     ul li a {
       display: inline-block;
-      color: #222;
       text-decoration: none;
       position: relative;
       transition: color 0.3s ease-out;
-    }
-
-    ul li a:hover {
-      color: #ADC153;
     }
 
     ul li a svg {
@@ -82,6 +96,44 @@
       margin: 40px 0;
       font-size: 0.75em;
     }
+
+    @media (min-width: 500px) {
+      #description span {
+        display: inline-block;
+      }
+
+      #description .name:hover {
+        text-shadow: 0 0 5px rgba(136, 148, 83, 0.5);
+      }
+
+      #description .intuitive:hover {
+        display: inline-block;
+        padding: 0 5px;
+        animation: shake 0.82s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+      }
+    }
+
+    /*
+     * Shake animation based on:
+     * https://css-tricks.com/snippets/css/shake-css-keyframe-animation/
+     */
+    @keyframes shake {
+      10%, 90% {
+        transform: translate(-1px, 0px);
+      }
+      
+      20%, 80% {
+        transform: translate(2px, 0);
+      }
+
+      30%, 50%, 70% {
+        transform: translate(-4px, 0);
+      }
+
+      40%, 60% {
+        transform: translate(4px, 0);
+      }
+    }
   </style>
 </head>
 <body>
@@ -92,7 +144,29 @@
       Please <a href="https://browsehappy.com/">upgrade your browser</a> to improve your experience and security.
     </p>
   <![endif]-->
-  <p class="findme">Find me on:</p>
+  <p id="description">
+    <span>Hi, I’m <strong class="name">Benjamin Tan</strong>.</span>
+    <span>I construct <em class="intuitive">intuitive</em> user experiences</span>
+    <span>using <span class="modern">modern technologies</span>.</span>
+  </p>
+  <p>
+    I’m passionate about utilizing modern technologies like the Internet to create meaningful and enjoyable products and experiences.
+    Currently, I’m studying computing at the <a href="http://www.nus.edu.sg/">National University of Singapore</a>.
+  </p>
+  <p>
+    I enjoy reading and writing well-designed, elegant and performant code.
+    During my free time, I contribute to and learn from the open source community.
+    In the past, I’ve been a member of the <a href="https://lodash.com/">lodash</a>, <a href="https://github.com/bestiejs">BestieJS</a>, <a href="https://webtorrent.io/">WebTorrent</a>, and <a href="https://advisory.sg/">Advisory</a> teams, running the gamut of tasks including development, API design, bugfixes, documentation, issue triaging and website maintenance.
+  </p>
+  <p>
+    Professionally, I’ve worked at companies like <a href="https://mediapop.co/">Media Pop</a>, contributing to the design and implementation of interactive web experiences.
+  </p>
+  <p>
+    Aside from staring at computers, you can typically find me face-deep in a book, plugged into a pair of headphones nodding to music, or in some cases just nodding off.
+  </p>
+  <p class="findme">
+    If you’re interested in getting in touch with me, you can find me online at the following platforms:
+  </p>
   <ul id="links">
     <li>
       <a href="https://github.com/bnjmnt4n">
@@ -119,10 +193,10 @@
       </a>
     </li>
   </ul>
-  <p id="copyright">
-    Last updated on <time datetime="2020-06-23">23 June 2020</time><br>
+  <footer id="copyright">
+    Last updated on <time datetime="2020-07-26">26 July 2020</time><br>
     © 2020 by Benjamin Tan
-  </p>
+  </footer>
   <script id="template" type="template/html">
     <a href="mailto:EMAIL">
       <svg role="img" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><path d="M464 64H48C21.49 64 0 85.49 0 112v288c0 26.51 21.49 48 48 48h416c26.51 0 48-21.49 48-48V112c0-26.51-21.49-48-48-48zm0 48v40.805c-22.422 18.259-58.168 46.651-134.587 106.49-16.841 13.247-50.201 45.072-73.413 44.701-23.208.375-56.579-31.459-73.413-44.701C106.18 199.465 70.425 171.067 48 152.805V112h416zM48 400V214.398c22.914 18.251 55.409 43.862 104.938 82.646 21.857 17.205 60.134 55.186 103.062 54.955 42.717.231 80.509-37.199 103.053-54.947 49.528-38.783 82.032-64.401 104.947-82.653V400H48z"/></svg>
@@ -130,6 +204,7 @@
     </a>
   </script>
   <script>
+    // Only add email when JavaScript is enabled to avoid spambots.
     var li = document.createElement('li');
     li.innerHTML = template.innerHTML.replace(
       'EMAIL',
