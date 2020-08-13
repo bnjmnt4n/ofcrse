@@ -16,7 +16,7 @@
     body {
       max-width: 600px;
       margin: 20px auto;
-      padding: 0 60px;
+      padding: 0 30px;
       font-size: 1em;
       line-height: 1.5;
     }
@@ -86,8 +86,7 @@
     }
 
     ul li a svg {
-      position: absolute;
-      left: -1.5em;
+      margin-right: 0.6em;
       width: 0.9em;
       height: 0.9em;
       fill: currentColor;
@@ -99,6 +98,16 @@
     }
 
     @media (min-width: 500px) {
+      body {
+        padding: 0 60px;
+      }
+
+      ul li a svg {
+        position: absolute;
+        margin-right: 0;
+        left: -1.5em;
+      }
+
       #description span {
         display: inline-block;
       }
