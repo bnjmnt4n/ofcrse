@@ -1,0 +1,23 @@
+{
+  "name": "ofcr.se",
+  "version": "0.0.0",
+  "description": "Benjamin Tan’s homepage",
+  "main": "index.js",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bnjmnt4n/ofcr.se.git"
+  },
+  "author": "Benjamin Tan <benjamin@dev.ofcr.se> (https://ofcr.se/)",
+  "bugs": {
+    "url": "https://github.com/bnjmnt4n/ofcr.se/issues"
+  },
+  "homepage": "https://github.com/bnjmnt4n/ofcr.se#readme",
+  "dependencies": {
+    "astro": "^0.20.7"
+  }
+}
