@@ -18,6 +18,6 @@
   },
   "homepage": "https://github.com/bnjmnt4n/ofcr.se#readme",
   "dependencies": {
-    "astro": "^0.20.7"
+    "astro": "^0.20.12"
   }
 }
