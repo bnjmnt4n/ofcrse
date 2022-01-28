@@ -1,0 +1,27 @@
+name: Build
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build site
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup Node
+        uses: actions/setup-node@v2
+        with:
+          node_version: "16"
+      - name: Build site
+        run: |
+          npm ci
+          npm run build
+      - name: Archive site
+        uses: actions/upload-artifact@v2
+        with:
+          name: site
+          path: dist
