@@ -51,11 +51,6 @@
       font-size: 1.5em;
     }
 
-    #description .name,
-    #description .experiment {
-      transition: all 0.3s ease-in;
-    }
-
     #contact {
       font-size: 0.9em;
       margin: 40px 0 10px;
@@ -75,51 +70,20 @@
       #description span {
         display: inline-block;
       }
-
-      #description .name:hover {
-        text-shadow: 0 0 5px rgba(136, 148, 83, 0.5);
-      }
-
-      #description .experiment:hover {
-        display: inline-block;
-        padding: 0 5px;
-        animation: shake 0.82s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
-      }
-    }
-
-    /*
-     * Shake animation based on:
-     * https://css-tricks.com/snippets/css/shake-css-keyframe-animation/
-     */
-    @keyframes shake {
-      10%, 90% {
-        transform: translate(-1px, 0px);
-      }
-      
-      20%, 80% {
-        transform: translate(2px, 0);
-      }
-
-      30%, 50%, 70% {
-        transform: translate(-4px, 0);
-      }
-
-      40%, 60% {
-        transform: translate(4px, 0);
-      }
     }
   </style>
 </head>
 <body>
   <h1 id="heading">ofcr<span class="dot">.</span>se</h1>
   <p id="description">
-    <span>Hi, I’m <strong class="name">Benjamin Tan</strong>.</span><br />
-    <span>I like to <em class="experiment">experiment</em></span>{" "}
-    <span>with <span class="modern">modern technologies</span>.</span>
+    <span>Hi, I’m <strong>Benjamin Tan</strong>,</span>{" "}
+    <span>a software engineer from Singapore.</span><br>
+    <span>I spend most of my time working with modern web technologies.</span>
   </p>
   <p>
-    I’m passionate about utilizing modern technologies like the Internet to create meaningful and enjoyable products and experiences.
+    I’m passionate about using software to create meaningful products and experiences.
     Currently, I’m studying Computer Science at the <a href="https://www.comp.nus.edu.sg/">National University of Singapore</a>.
+    Some topics which have caught my interest lately include programming languages, distributed systems, databases, and cryptography.
   </p>
   <p>
     I enjoy reading and writing well-designed, elegant and performant code.
@@ -137,7 +101,7 @@
     Alternatively, drop me <a href="mailto:benjamin@ofcr.se">an email</a>.
   </aside>
   <footer id="copyright">
-    Last updated on <time datetime="2022-01-28">28 January 2022</time><br>
+    Last updated on <time datetime="2022-02-11">11 February 2022</time><br>
     © 2022 by Benjamin Tan
   </footer>
   <script
