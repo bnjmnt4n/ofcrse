@@ -1,6 +1,7 @@
-export default /** @type {import("astro").AstroUserConfig} */ ({
-  buildOptions: {
-    site: "https://ofcr.se/",
-    sitemap: true,
-  },
+import { defineConfig } from "astro/config";
+import sitemap from "@astrojs/sitemap";
+
+export default defineConfig({
+  site: "https://ofcr.se/",
+  integrations: [sitemap()],
 });
