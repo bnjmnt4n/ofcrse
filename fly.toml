@@ -38,7 +38,7 @@ processes = []
     timeout = "2s"
 
   [[services.http_checks]]
-    interval = 10000
+    interval = 20000
     grace_period = "5s"
     method = "get"
     path = "/healthz"
@@ -47,3 +47,7 @@ processes = []
     tls_skip_verify = false
     [services.http_checks.headers]
       Host = "health.check"
+
+[mounts]
+source = "default_volume"
+destination = "/data"
