@@ -1,3 +1,6 @@
+---
+const origin = Astro.site.origin;
+---
 <!doctype html>
 <html lang="en">
 <head>
@@ -5,68 +8,71 @@
   <title>404 | ofcr.se</title>
   <meta name="description" content="ofcr.se is Benjamin Tan’s homepage.">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <style is:global>
-    html {
-      color: #222;
-      background: #fffffa;
-      font-size: 20px;
-      font-family: Palatino, "Palatino Linotype", "Palatino LT STD", "Book Antiqua", Georgia, serif;
-    }
-
-    body {
-      box-sizing: border-box;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      min-height: 100vh;
-
-      max-width: 600px;
-      margin: 0 auto;
-      padding: 20px 30px;
-      font-size: 1em;
-      line-height: 1.5;
-    }
-
-    a {
-      color: #222;
-      text-decoration: underline;
-      transition: all 0.3s ease-in-out;
-    }
-
-    a:hover {
-      color: #ADC153;
-    }
-
-    #heading {
-      margin: 0 0 10px;
-      font-weight: bold;
-      font-size: 3em;
-    }
-
-    #missing {
-      margin: 0;
-      font-family: Inter, "Helvetica Neue", "Arial", sans-serif;
-      font-size: 1.6em;
-    }
-
-    @media (min-width: 500px) {
-      body {
-        padding-left: 60px;
-        padding-right: 60px;
+  <style
+    is:inline
+    set:html={`
+      html {
+        color: #222;
+        background: #fffffa;
+        font-size: 20px;
+        font-family: Palatino, "Palatino Linotype", "Palatino LT STD", "Book Antiqua", Georgia, serif;
       }
-    }
-  </style>
+
+      body {
+        box-sizing: border-box;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        min-height: 100vh;
+
+        max-width: 600px;
+        margin: 0 auto;
+        padding: 20px 30px;
+        font-size: 1em;
+        line-height: 1.5;
+      }
+
+      a {
+        color: #222;
+        text-decoration: underline;
+        transition: all 0.3s ease-in-out;
+      }
+
+      a:hover {
+        color: #ADC153;
+      }
+
+      #heading {
+        margin: 0 0 10px;
+        font-weight: bold;
+        font-size: 3em;
+      }
+
+      #missing {
+        margin: 0;
+        font-family: Inter, "Helvetica Neue", "Arial", sans-serif;
+        font-size: 1.6em;
+      }
+
+      @media (min-width: 500px) {
+        body {
+          padding-left: 60px;
+          padding-right: 60px;
+        }
+      }
+    `}
+  />
 </head>
 <body>
   <h1 id="heading">404</h1>
   <p id="missing">
     The link you’re looking for couldn’t be found.<br>
-    <a href="/">Head home?</a>
+    <a href={`${origin}/`}>Head home?</a>
   </p>
   <script
-    src="/vendor/count.js"
     async
-    data-goatcounter="/count">
-  </script>
+    src={`${origin}/vendor/count.js`}
+    data-goatcounter={`${origin}/count`}
+  />
 </body>
 </html>
