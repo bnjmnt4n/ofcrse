@@ -1,7 +1,7 @@
 {
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs?rev=c07b471b52be8fbc49a7dc194e9b37a6e19ee04d";
-    flake-utils.url = "github:numtide/flake-utils?rev=846b2ae0fc4cc943637d3d1def4454213e203cba";
+    nixpkgs.url = "github:NixOS/nixpkgs?rev=38860c9e91cb00f4d8cd19c7b4e36c45680c89b5";
+    flake-utils.url = "github:numtide/flake-utils?rev=7e2a3b3dfd9af950a856d66b0a7d01e3c18aa249";
   };
 
   outputs = { self, nixpkgs, flake-utils }:
@@ -12,7 +12,7 @@
        devShell = pkgs.mkShell {
           buildInputs = with pkgs; [
             flyctl
-            nodejs-16_x
+            nodejs-18_x
           ];
         };
       });
