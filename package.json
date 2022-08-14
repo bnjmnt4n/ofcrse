@@ -17,8 +17,8 @@
     "url": "https://github.com/bnjmnt4n/ofcr.se/issues"
   },
   "homepage": "https://github.com/bnjmnt4n/ofcr.se#readme",
-  "dependencies": {
-    "@astrojs/sitemap": "^0.2.6",
-    "astro": "^1.0.0-beta.73"
+  "devDependencies": {
+    "@astrojs/sitemap": "^1.0.0",
+    "astro": "^1.0.5"
   }
 }
