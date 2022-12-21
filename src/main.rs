@@ -9,13 +9,25 @@ use axum::{
     Router,
 };
 use tower::util::ServiceExt;
-use tower_http::services::{ServeDir, ServeFile};
+use tower_http::{
+    services::{ServeDir, ServeFile},
+    trace::TraceLayer,
+};
+use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 const DEFAULT_PORT: i32 = 3000;
 const DEFAULT_SITE_URL: &str = "http://localhost:3000/";
 
 #[tokio::main]
 async fn main() {
+    tracing_subscriber::registry()
+        .with(
+            tracing_subscriber::EnvFilter::try_from_default_env()
+                .unwrap_or_else(|_| "ofcrse=info,tower_http=debug".into()),
+        )
+        .with(tracing_subscriber::fmt::layer())
+        .init();
+
     let port: u16 = std::env::var("PORT")
         .unwrap_or(DEFAULT_PORT.to_string())
         .parse()
@@ -27,7 +39,7 @@ async fn main() {
         .route("/*path", any(handler));
 
     axum::Server::bind(&address)
-        .serve(app.into_make_service())
+        .serve(app.layer(TraceLayer::new_for_http()).into_make_service())
         .await
         .unwrap();
 }
