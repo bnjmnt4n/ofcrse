@@ -9,7 +9,7 @@ use axum::{
     body::Body,
     extract::{FromRef, Host, Path, State},
     http::{header, Request, StatusCode},
-    response::{IntoResponse, Redirect, Response},
+    response::{IntoResponse, Redirect},
     routing::{any, get, get_service},
     Router,
 };
@@ -71,46 +71,62 @@ async fn handler(
     Host(hostname): Host,
     request: Request<Body>,
 ) -> impl IntoResponse {
-    // Primary static file server.
-    let file_server = ServeDir::new("dist").not_found_service(ServeFile::new("dist/404.html"));
-    let primary_app =
-        Router::new().fallback_service(get_service(file_server).handle_error(handle_error));
+    let primary_app = primary_router();
 
-    // Music shortlink.
     let music_shortlink = app_state.shortlinks.get("music").unwrap().clone();
-    let music_shortlink_app = Router::new().route(
-        "/",
-        get(|| async move { (StatusCode::FOUND, [(header::LOCATION, music_shortlink)]) }),
-    );
+    let music_shortlink_app = music_shortlink_router(music_shortlink);
 
-    // All shortlinks.
-    let site_url = app_state.site_url.clone();
-    let shortlink_app = Router::new()
-        .route("/", get(|| async move { Redirect::temporary(&site_url) }))
-        .route("/*path", get(handle_shortlink))
-        .with_state(app_state.shortlinks);
+    let shortlink_app = shortlinks_router(app_state.site_url, app_state.shortlinks);
 
-    // Health check app for fly.io.
-    let health_check_app = Router::new().route("/health_check", get(|| async { "ok" }));
+    let health_check_app = health_check_router();
 
-    match hostname.as_str() {
-        "health.check" => health_check_app.oneshot(request),
-        "l.ofcr.se" => shortlink_app.oneshot(request),
-        "music.ofcr.se" => music_shortlink_app.oneshot(request),
-        _ => primary_app.oneshot(request),
-    }
-    .await
+    let router = match hostname.as_str() {
+        "health.check" => health_check_app,
+        "l.ofcr.se" => shortlink_app,
+        "music.ofcr.se" => music_shortlink_app,
+        _ => primary_app,
+    };
+    router.oneshot(request).await
 }
 
-async fn handle_shortlink(
-    State(shortlinks): State<Arc<HashMap<String, String>>>,
-    Path((_, shortlink)): Path<(String, String)>,
-) -> Response {
-    if let Some(url) = shortlinks.get(&shortlink) {
-        (StatusCode::FOUND, [(header::LOCATION, url)]).into_response()
-    } else {
-        StatusCode::NOT_FOUND.into_response()
-    }
+// Primary static file server.
+fn primary_router() -> Router {
+    // Primary static file server.
+    let file_server = ServeDir::new("dist").not_found_service(ServeFile::new("dist/404.html"));
+    Router::new().fallback_service(get_service(file_server).handle_error(handle_error))
+}
+
+// Music shortlink.
+fn music_shortlink_router(music_shortlink: String) -> Router {
+    Router::new().route(
+        "/",
+        get(|| async move { (StatusCode::FOUND, [(header::LOCATION, music_shortlink)]) }),
+    )
+}
+
+// All shortlinks.
+fn shortlinks_router(site_url: String, shortlinks: Arc<HashMap<String, String>>) -> Router {
+    Router::new()
+        .route("/", get(|| async move { Redirect::temporary(&site_url) }))
+        .route(
+            "/*path",
+            get(
+                |State(shortlinks): State<Arc<HashMap<String, String>>>,
+                 Path((_, shortlink)): Path<(String, String)>| async move {
+                    if let Some(url) = shortlinks.get(&shortlink) {
+                        (StatusCode::FOUND, [(header::LOCATION, url)]).into_response()
+                    } else {
+                        StatusCode::NOT_FOUND.into_response()
+                    }
+                },
+            ),
+        )
+        .with_state(shortlinks)
+}
+
+// Health check app for fly.io.
+fn health_check_router() -> Router {
+    Router::new().route("/health_check", get(|| async { "ok" }))
 }
 
 async fn handle_error(_err: std::io::Error) -> impl IntoResponse {
