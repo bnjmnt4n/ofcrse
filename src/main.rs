@@ -1,13 +1,8 @@
-use std::{
-    collections::HashMap,
-    io::BufReader,
-    net::{IpAddr, Ipv4Addr, SocketAddr},
-    sync::Arc,
-};
+use std::{collections::HashMap, io::BufReader, net::SocketAddr};
 
 use axum::{
     body::Body,
-    extract::{FromRef, Host, Path, State},
+    extract::{Host, Path},
     http::{header, Request, StatusCode},
     response::{IntoResponse, Redirect},
     routing::{any, get, get_service},
@@ -24,10 +19,10 @@ const DEFAULT_PORT: i32 = 3000;
 const DEFAULT_SITE_URL: &str = "http://localhost:3000/";
 const DEFAULT_SHORTLINKS_DB: &str = "shortlinks.json";
 
-#[derive(Clone, FromRef)]
+#[derive(Clone)]
 struct AppState {
     site_url: String,
-    shortlinks: Arc<HashMap<String, String>>,
+    shortlinks: HashMap<String, String>,
 }
 
 #[tokio::main]
@@ -44,33 +39,34 @@ async fn main() {
         .unwrap_or(DEFAULT_PORT.to_string())
         .parse()
         .unwrap();
-    let address = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)), port);
+    let address = SocketAddr::from(([0, 0, 0, 0], port));
 
     let site_url = std::env::var("SITE_URL").unwrap_or(DEFAULT_SITE_URL.to_string());
     let shortlinks_database =
         std::env::var("SHORTLINKS_DB").unwrap_or(DEFAULT_SHORTLINKS_DB.to_string());
-    let shortlinks = Arc::new(read_shortlinks_from_file(shortlinks_database).unwrap());
+    let shortlinks = read_shortlinks_from_file(shortlinks_database).unwrap();
     let app_state = AppState {
         site_url,
         shortlinks,
     };
 
-    let app = Router::new()
-        .route("/", any(handler))
-        .route("/*path", any(handler))
-        .with_state(app_state);
+    let app = Router::new();
+    // Required for both the standalone `/` path and the wildcard path.
+    let app = initialize_app(app, app_state.clone(), "/");
+    let app = initialize_app(app, app_state, "/*path");
+    let app = app.fallback_service(
+        // TODO: serve with 404 status code.
+        get_service(ServeFile::new("dist/404.html")).handle_error(handle_error),
+    );
+    let app = app.layer(TraceLayer::new_for_http());
 
     axum::Server::bind(&address)
-        .serve(app.layer(TraceLayer::new_for_http()).into_make_service())
+        .serve(app.into_make_service())
         .await
         .unwrap();
 }
 
-async fn handler(
-    State(app_state): State<AppState>,
-    Host(hostname): Host,
-    request: Request<Body>,
-) -> impl IntoResponse {
+fn initialize_app(app: Router, app_state: AppState, path: &str) -> Router {
     let primary_app = primary_router();
 
     let music_shortlink = app_state.shortlinks.get("music").unwrap().clone();
@@ -80,13 +76,18 @@ async fn handler(
 
     let health_check_app = health_check_router();
 
-    let router = match hostname.as_str() {
-        "health.check" => health_check_app,
-        "l.ofcr.se" => shortlink_app,
-        "music.ofcr.se" => music_shortlink_app,
-        _ => primary_app,
-    };
-    router.oneshot(request).await
+    app.route(
+        path,
+        any(|Host(hostname): Host, request: Request<Body>| async move {
+            let router = match hostname.as_str() {
+                "health.check" => health_check_app,
+                "l.ofcr.se" => shortlink_app,
+                "music.ofcr.se" => music_shortlink_app,
+                _ => primary_app,
+            };
+            router.oneshot(request).await
+        }),
+    )
 }
 
 // Primary static file server.
@@ -105,23 +106,19 @@ fn music_shortlink_router(music_shortlink: String) -> Router {
 }
 
 // All shortlinks.
-fn shortlinks_router(site_url: String, shortlinks: Arc<HashMap<String, String>>) -> Router {
+fn shortlinks_router(site_url: String, shortlinks: HashMap<String, String>) -> Router {
     Router::new()
         .route("/", get(|| async move { Redirect::temporary(&site_url) }))
         .route(
             "/*path",
-            get(
-                |State(shortlinks): State<Arc<HashMap<String, String>>>,
-                 Path((_, shortlink)): Path<(String, String)>| async move {
-                    if let Some(url) = shortlinks.get(&shortlink) {
-                        (StatusCode::FOUND, [(header::LOCATION, url)]).into_response()
-                    } else {
-                        StatusCode::NOT_FOUND.into_response()
-                    }
-                },
-            ),
+            get(|Path((_, shortlink)): Path<(String, String)>| async move {
+                if let Some(url) = shortlinks.get(&shortlink) {
+                    (StatusCode::FOUND, [(header::LOCATION, url)]).into_response()
+                } else {
+                    StatusCode::NOT_FOUND.into_response()
+                }
+            }),
         )
-        .with_state(shortlinks)
 }
 
 // Health check app for fly.io.
