@@ -9,7 +9,7 @@ edition = "2021"
 axum = { version = "0.6", features = ["macros"] }
 color-eyre = "0.6.2"
 hyper = { version = "0.14", features = ["full"] }
-hyper-tls = "0.5"
+hyper-tls = { version = "0.5", features = ["vendored"] }
 serde_json = "1.0"
 tokio = { version = "1.23", features = ["full"] }
 tower = "0.4"

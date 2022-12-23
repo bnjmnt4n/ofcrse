@@ -20,7 +20,6 @@ RUN cargo build --release
 
 FROM alpine:3.17
 WORKDIR /app
-RUN apk add openssl-dev
 COPY --from=app-builder /ofcrse/target/release/ofcrse .
 COPY --from=site-builder /site/dist/ ./dist/
 CMD ["/app/ofcrse"]
