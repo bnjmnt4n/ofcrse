@@ -16,6 +16,8 @@ COPY Cargo.lock Cargo.toml .
 RUN cargo build --release
 RUN rm -r src target/release/deps/ofcrse*
 COPY src/*.rs ./src/
+# See https://github.com/sfackler/rust-native-tls/issues/190#issuecomment-723579236.
+ENV RUSTFLAGS -Ctarget-feature=-crt-static 
 RUN cargo build --release
 
 FROM alpine:3.17
