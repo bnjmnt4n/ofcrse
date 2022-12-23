@@ -15,7 +15,7 @@ use axum::{
     routing::{any, get, get_service},
     Router,
 };
-use color_eyre::{eyre::Context, Report};
+use color_eyre::Report;
 use hyper::{client::HttpConnector, Uri};
 use hyper_tls::HttpsConnector;
 use tower::ServiceExt;
@@ -23,6 +23,7 @@ use tower_http::{
     services::{ServeDir, ServeFile},
     trace::TraceLayer,
 };
+use tracing::info;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 const DEFAULT_PORT: i32 = 3000;
@@ -65,8 +66,10 @@ async fn main() -> Result<(), color_eyre::Report> {
 
     let shortlinks_database =
         std::env::var("SHORTLINKS_FILE").unwrap_or(DEFAULT_SHORTLINKS_FILE.to_string());
-    let shortlinks = read_shortlinks_from_file(shortlinks_database)
-        .wrap_err("Could not open shortlinks file")?;
+    let shortlinks = read_shortlinks_from_file(shortlinks_database).unwrap_or_else(|err| {
+        info!("Could not read shortlinks: {:?}", err);
+        HashMap::new()
+    });
 
     let app_state = AppState {
         site_url,
