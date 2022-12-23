@@ -1,11 +1,22 @@
-FROM node:16-alpine as builder
-WORKDIR /app
-COPY package*.json ./
+FROM node:18-alpine as site-builder
+WORKDIR /site
+COPY package.json package-lock.json .
 RUN npm clean-install
-COPY . .
+COPY astro.config.mjs public site .
 RUN npm run build
 
-FROM openresty/openresty:1.19.9.1-10-alpine
-ADD nginx.conf /usr/local/openresty/nginx/conf/nginx.conf
-COPY --from=builder /app/dist /var/www/ofcr.se
-ENV NGINX_PORT=8080
+FROM rust:1.66-alpine as app-builder
+RUN USER=root cargo new --bin ofcrse
+WORKDIR /ofcrse
+COPY Cargo.lock Cargo.toml .
+# Cache dependencies.
+RUN cargo build --release
+RUN rm -r src target/release/deps/ofcrse*
+COPY src .
+RUN cargo build --release
+
+FROM scratch
+WORKDIR /app
+COPY --from=app-builder /ofcrse/target/release/ofcrse .
+COPY --from=site-builder /site/dist .
+CMD ["/app/ofcrse"]
