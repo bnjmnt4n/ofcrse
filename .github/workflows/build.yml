@@ -12,9 +12,9 @@ jobs:
     name: Build site
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Setup Node
-        uses: actions/setup-node@v2
+        uses: actions/setup-node@v3
         with:
           node-version: '18'
           cache: npm
@@ -23,7 +23,7 @@ jobs:
           npm ci
           npm run build
       - name: Archive site
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: site
           path: dist
@@ -32,8 +32,8 @@ jobs:
     name: Build server
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/cache@v2
+      - uses: actions/checkout@v3
+      - uses: actions/cache@v3
         with:
           path: |
             ~/.cargo/registry
@@ -44,14 +44,12 @@ jobs:
         uses: actions-rs/toolchain@v1
         with:
           profile: minimal
-          toolchain: stable
+          toolchain: 1.66.0
           override: true
-      - uses: actions-rs/cargo@v1
-        with:
-          command: build
-          args: --release
-      - name: Archive site
-        uses: actions/upload-artifact@v2
+      - name: Build site
+        run: cargo build --release
+      - name: Archive binary
+        uses: actions/upload-artifact@v3
         with:
           name: ofcrse
           path: target/release/ofcrse
