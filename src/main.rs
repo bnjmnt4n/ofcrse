@@ -17,6 +17,7 @@ use axum::{
 };
 use color_eyre::{eyre::Context, Report};
 use hyper::{client::HttpConnector, Uri};
+use hyper_tls::HttpsConnector;
 use tower::ServiceExt;
 use tower_http::{
     services::{ServeDir, ServeFile},
@@ -89,9 +90,14 @@ async fn main() -> Result<(), color_eyre::Report> {
     Ok(())
 }
 
+type Client = hyper::client::Client<HttpsConnector<HttpConnector>, Body>;
+
 fn initialize_app(app: Router, app_state: AppState, path: &str) -> Router {
+    let https = HttpsConnector::new();
+    let client = hyper::Client::builder().build(https);
+
     let primary_app = primary_router().with_state(PrimaryAppState {
-        client: Client::new(),
+        client,
         goatcounter: (app_state.goatcounter_url, app_state.goatcounter_host),
     });
 
@@ -115,8 +121,6 @@ fn initialize_app(app: Router, app_state: AppState, path: &str) -> Router {
         }),
     )
 }
-
-type Client = hyper::client::Client<HttpConnector, Body>;
 
 #[derive(Clone, FromRef)]
 struct PrimaryAppState {
