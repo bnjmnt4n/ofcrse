@@ -39,7 +39,7 @@ jobs:
             ~/.cargo/registry
             ~/.cargo/git
             target
-          key: ${{ runner.os }}-server-${{ hashFiles('**/Cargo.lock') }}
+          key: rust-cache-${{ runner.os }}-${{ hashFiles('**/Cargo.lock') }}
       - name: Setup Rust
         uses: actions-rs/toolchain@v1
         with:
@@ -74,14 +74,6 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
 
-      - name: Cache Docker layers
-        uses: actions/cache@v3
-        with:
-          path: /tmp/.buildx-cache
-          key: ${{ runner.os }}-buildx-${{ github.sha }}
-          restore-keys: |
-            ${{ runner.os }}-buildx-
-
       - name: Authenticate to Fly.io registry
         uses: docker/login-action@v2
         with:
@@ -89,7 +81,7 @@ jobs:
           username: x
           password: ${{ secrets.FLY_API_TOKEN }}
 
-      - name: Docker build
+      - name: Build and push Docker image
         uses: docker/build-push-action@v3
         with:
           context: .
@@ -98,17 +90,8 @@ jobs:
             registry.fly.io/${{ steps.app_name.outputs.value }}:${{ github.ref_name }}-${{ github.sha }}
           build-args: |
             COMMIT_SHA=${{ github.sha }}
-          cache-from: type=local,src=/tmp/.buildx-cache
-          cache-to: type=local,mode=max,dest=/tmp/.buildx-cache-new
-
-      # This ugly bit is necessary to prevent the cache from growing to hit the 5GB limit.
-      # See:
-      # - https://github.com/docker/build-push-action/issues/252
-      # - https://github.com/moby/buildkit/issues/1896
-      - name: Move cache
-        run: |
-          rm -rf /tmp/.buildx-cache
-          mv /tmp/.buildx-cache-new /tmp/.buildx-cache
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
       - name: Deploy
         uses: superfly/flyctl-actions@1.3
