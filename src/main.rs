@@ -33,7 +33,8 @@ struct AppState {
 }
 
 #[tokio::main]
-async fn main() {
+async fn main() -> Result<(), color_eyre::Report> {
+    color_eyre::install()?;
     tracing_subscriber::registry()
         .with(
             tracing_subscriber::EnvFilter::try_from_default_env()
@@ -80,6 +81,8 @@ async fn main() {
         .serve(app.into_make_service())
         .await
         .unwrap();
+
+    Ok(())
 }
 
 fn initialize_app(app: Router, app_state: AppState, path: &str) -> Router {
