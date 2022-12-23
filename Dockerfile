@@ -4,7 +4,7 @@ COPY package.json package-lock.json .
 RUN npm clean-install
 COPY astro.config.mjs .
 COPY public/ ./public/
-COPY site/ ./site/
+COPY src/pages/ ./src/pages/
 RUN npm run build
 
 FROM rust:1.66-alpine as app-builder
@@ -15,7 +15,7 @@ COPY Cargo.lock Cargo.toml .
 # Cache dependencies.
 RUN cargo build --release
 RUN rm -r src target/release/deps/ofcrse*
-COPY src/ ./src/
+COPY src/*.rs ./src/
 RUN cargo build --release
 
 FROM alpine:3.17
