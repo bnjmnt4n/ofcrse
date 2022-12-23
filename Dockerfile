@@ -6,6 +6,7 @@ COPY astro.config.mjs public site .
 RUN npm run build
 
 FROM rust:1.66-alpine as app-builder
+RUN apk add libc-dev
 RUN USER=root cargo new --bin ofcrse
 WORKDIR /ofcrse
 COPY Cargo.lock Cargo.toml .
