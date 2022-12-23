@@ -233,7 +233,7 @@ fn shortlinks_router(site_url: String, shortlinks: HashMap<String, String>) -> R
 
 // Health check app for fly.io.
 fn health_check_router() -> Router {
-    Router::new().route("/health_check", get(|| async { "ok" }))
+    Router::new().route("/healthz", get(|| async { "ok" }))
 }
 
 async fn handle_error(err: std::io::Error) -> HttpError {
