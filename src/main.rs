@@ -2,6 +2,9 @@ use std::collections::HashMap;
 use std::io::BufReader;
 use std::net::SocketAddr;
 
+mod error;
+
+use crate::error::HttpError;
 use axum::{
     body::Body,
     extract::{FromRef, Host, Path, State},
@@ -12,6 +15,7 @@ use axum::{
     routing::{any, get, get_service},
     Router,
 };
+use color_eyre::{eyre::Context, Report};
 use hyper::{client::HttpConnector, Uri};
 use tower::ServiceExt;
 use tower_http::{
@@ -60,7 +64,8 @@ async fn main() -> Result<(), color_eyre::Report> {
 
     let shortlinks_database =
         std::env::var("SHORTLINKS_DB").unwrap_or(DEFAULT_SHORTLINKS_DB.to_string());
-    let shortlinks = read_shortlinks_from_file(shortlinks_database).unwrap();
+    let shortlinks = read_shortlinks_from_file(shortlinks_database)
+        .wrap_err("Could not open shortlinks file")?;
 
     let app_state = AppState {
         site_url,
@@ -74,13 +79,12 @@ async fn main() -> Result<(), color_eyre::Report> {
     let app = initialize_app(app, app_state.clone(), "/");
     let app = initialize_app(app, app_state, "/*path");
     // TODO: return 404 file.
-    let app = app.fallback(|| async { (StatusCode::NOT_FOUND, "404 Not Found") });
+    let app = app.fallback(|| async { Err::<(), HttpError>(HttpError::NotFound) });
     let app = app.layer(TraceLayer::new_for_http());
 
     axum::Server::bind(&address)
         .serve(app.into_make_service())
-        .await
-        .unwrap();
+        .await?;
 
     Ok(())
 }
@@ -136,7 +140,7 @@ async fn goatcounter_proxy(
     State(client): State<Client>,
     State((goatcounter_url, goatcounter_host)): State<(String, String)>,
     mut req: Request<Body>,
-) -> Result<Response<Body>, (StatusCode, String)> {
+) -> Result<Response<Body>, HttpError> {
     let path = req
         .uri()
         .path_and_query()
@@ -145,12 +149,7 @@ async fn goatcounter_proxy(
     let path = path.strip_prefix("/count").unwrap();
 
     let uri = format!("{}{}", goatcounter_url, path);
-    *req.uri_mut() = Uri::try_from(uri).map_err(|err| {
-        (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            format!("Could not construct proxied URL: {:?}", err),
-        )
-    })?;
+    *req.uri_mut() = Uri::try_from(uri)?;
 
     let headers_map = req.headers_mut();
     // Remove any unnecessary headers.
@@ -165,12 +164,7 @@ async fn goatcounter_proxy(
         .remove("fly-client-ip")
         .and_then(|real_ip| headers_map.insert("X-Real-IP", real_ip));
 
-    Ok(client.request(req).await.map_err(|err| {
-        (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            format!("Error proxying request: {:?}", err),
-        )
-    })?)
+    Ok(client.request(req).await?)
 }
 
 // Redirect any non-HTTPS requests to HTTP.
@@ -178,45 +172,20 @@ async fn redirect_to_https<B>(
     Host(hostname): Host,
     req: Request<B>,
     next: Next<B>,
-) -> Result<Response, (StatusCode, String)> {
+) -> Result<Response, HttpError> {
     let proto: &str = req
         .headers()
         .get("x-forwarded-proto")
-        .map(|header| header.to_str())
-        .unwrap_or(Ok("https"))
-        .map_err(|err| {
-            (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                format!(
-                    "Could not convert X-Forwarded-Proto header to string: {:?}",
-                    err
-                ),
-            )
-        })?;
+        .map(|header| header.to_str().unwrap_or("https"))
+        .unwrap_or("https");
 
     if proto == "http" {
         let mut parts = req.uri().clone().into_parts();
         parts.scheme = Some(Scheme::HTTPS);
         // Read from `Host` header since the incoming request's authority is empty.
-        parts.authority = Some(Authority::try_from(&hostname[..]).map_err(|err| {
-            (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                format!("Could not parse hostname {}: {:?}", hostname, err),
-            )
-        })?);
+        parts.authority = Some(Authority::try_from(&hostname[..])?);
 
-        let uri: String = Uri::from_parts(parts)
-            .map_err(|err| {
-                (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    format!(
-                        "Could not construct new URI from {:?}: {:?}",
-                        req.uri(),
-                        err
-                    ),
-                )
-            })?
-            .to_string();
+        let uri: String = Uri::from_parts(parts)?.to_string();
 
         Ok((StatusCode::MOVED_PERMANENTLY, [(header::LOCATION, uri)]).into_response())
     } else {
@@ -243,9 +212,9 @@ fn shortlinks_router(site_url: String, shortlinks: HashMap<String, String>) -> R
             "/*path",
             get(|Path((_, shortlink)): Path<(String, String)>| async move {
                 if let Some(url) = shortlinks.get(&shortlink) {
-                    (StatusCode::FOUND, [(header::LOCATION, url)]).into_response()
+                    Ok((StatusCode::FOUND, [(header::LOCATION, url.clone())]))
                 } else {
-                    StatusCode::NOT_FOUND.into_response()
+                    Err(HttpError::NotFound)
                 }
             }),
         )
@@ -256,13 +225,13 @@ fn health_check_router() -> Router {
     Router::new().route("/health_check", get(|| async { "ok" }))
 }
 
-async fn handle_error(_err: std::io::Error) -> impl IntoResponse {
-    (StatusCode::INTERNAL_SERVER_ERROR, "Something went wrong...")
+async fn handle_error(err: std::io::Error) -> HttpError {
+    err.into()
 }
 
 fn read_shortlinks_from_file<P: AsRef<std::path::Path>>(
     path: P,
-) -> Result<HashMap<String, String>, Box<dyn std::error::Error>> {
+) -> Result<HashMap<String, String>, Report> {
     let file = std::fs::File::open(path)?;
     let reader = BufReader::new(file);
 
