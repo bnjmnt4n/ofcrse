@@ -104,7 +104,7 @@ fn initialize_app(app: Router, app_state: AppState, path: &str) -> Router {
         goatcounter: (app_state.goatcounter_url, app_state.goatcounter_host),
     });
 
-    let music_shortlink = app_state.shortlinks.get("music").unwrap().clone();
+    let music_shortlink = app_state.shortlinks.get("music").cloned();
     let music_shortlink_app = music_shortlink_router(music_shortlink).with_state(());
 
     let shortlink_app = shortlinks_router(app_state.site_url, app_state.shortlinks).with_state(());
@@ -201,10 +201,14 @@ async fn redirect_to_https<B>(
 }
 
 // Music shortlink.
-fn music_shortlink_router(music_shortlink: String) -> Router {
+fn music_shortlink_router(music_shortlink: Option<String>) -> Router {
     Router::new().route(
         "/",
-        get(|| async move { (StatusCode::FOUND, [(header::LOCATION, music_shortlink)]) }),
+        get(|| async move {
+            music_shortlink.map_or(Err(HttpError::NotFound), |music_shortlink| {
+                Ok((StatusCode::FOUND, [(header::LOCATION, music_shortlink)]))
+            })
+        }),
     )
 }
 
