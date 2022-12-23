@@ -27,7 +27,7 @@ use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 const DEFAULT_PORT: i32 = 3000;
 const DEFAULT_SITE_URL: &str = "http://localhost:3000/";
-const DEFAULT_SHORTLINKS_DB: &str = "shortlinks.json";
+const DEFAULT_SHORTLINKS_FILE: &str = "shortlinks.json";
 
 #[derive(Clone)]
 struct AppState {
@@ -64,7 +64,7 @@ async fn main() -> Result<(), color_eyre::Report> {
         .to_string();
 
     let shortlinks_database =
-        std::env::var("SHORTLINKS_DB").unwrap_or(DEFAULT_SHORTLINKS_DB.to_string());
+        std::env::var("SHORTLINKS_FILE").unwrap_or(DEFAULT_SHORTLINKS_FILE.to_string());
     let shortlinks = read_shortlinks_from_file(shortlinks_database)
         .wrap_err("Could not open shortlinks file")?;
 
