@@ -8,7 +8,7 @@ COPY src/pages/ ./src/pages/
 RUN npm run build
 
 FROM rust:1.66-alpine as app-builder
-RUN apk add libc-dev openssl-dev pkgconfig
+RUN apk add libc-dev make openssl-dev perl pkgconfig
 RUN USER=root cargo new --bin ofcrse
 WORKDIR /ofcrse
 COPY Cargo.lock Cargo.toml .
