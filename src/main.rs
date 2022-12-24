@@ -64,10 +64,10 @@ async fn main() -> Result<(), color_eyre::Report> {
         .unwrap()
         .to_string();
 
-    let shortlinks_database =
+    let shortlinks_file =
         std::env::var("SHORTLINKS_FILE").unwrap_or(DEFAULT_SHORTLINKS_FILE.to_string());
-    let shortlinks = read_shortlinks_from_file(shortlinks_database).unwrap_or_else(|err| {
-        info!("Could not read shortlinks: {:?}", err);
+    let shortlinks = read_shortlinks_from_file(shortlinks_file.clone()).unwrap_or_else(|_| {
+        info!("Could not open shortlinks file {}", shortlinks_file);
         HashMap::new()
     });
 
