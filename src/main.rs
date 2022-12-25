@@ -24,8 +24,8 @@ use tower_http::{
 use tracing::info;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
-const DEFAULT_PORT: i32 = 8080;
-const DEFAULT_SITE_URL: &str = "http://localhost:8080/";
+const DEFAULT_PORT: i32 = 3000;
+const DEFAULT_SITE_URL: &str = "http://localhost:3000/";
 const DEFAULT_SHORTLINKS_FILE: &str = "shortlinks.json";
 
 #[derive(Clone)]
