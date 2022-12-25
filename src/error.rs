@@ -114,7 +114,8 @@ impl IntoResponse for HttpError {
     }
 }
 
-// TODO: check environment variables.
 fn is_production() -> bool {
-    false
+    std::env::var("FLY_APP_NAME")
+        .map(|app_name| app_name == "ofcrse")
+        .unwrap_or(false)
 }
