@@ -36,15 +36,13 @@ processes = []
     restart_limit = 0
     timeout = "2s"
     tls_skip_verify = false
-
-    [[services.http_checks.headers]]
-      name = "Host"
-      value = "health.check"
+    [services.http_checks.headers]
+      Host = "health.check"
 
   [[services.ports]]
+    force_https = true
     handlers = ["http"]
     port = 80
-    force_https = true
 
   [[services.ports]]
     handlers = ["tls", "http"]
