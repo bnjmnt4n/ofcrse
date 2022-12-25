@@ -8,10 +8,8 @@ use crate::error::HttpError;
 use axum::{
     body::Body,
     extract::{FromRef, Host, Path, State},
-    http::uri::Scheme,
-    http::{header, uri::Authority, Request, StatusCode},
-    middleware::{self, Next},
-    response::{IntoResponse, Response},
+    http::{header, Request, StatusCode},
+    response::Response,
     routing::{any, get, get_service},
     Router,
 };
@@ -139,7 +137,6 @@ fn primary_router() -> Router<PrimaryAppState> {
         .route("/count/", any(goatcounter_proxy))
         .route("/count/*path", any(goatcounter_proxy))
         .fallback_service(get_service(file_server).handle_error(handle_error))
-        .layer(middleware::from_fn(redirect_to_https))
 }
 
 #[axum::debug_handler(state = PrimaryAppState)]
@@ -172,32 +169,6 @@ async fn goatcounter_proxy(
         .and_then(|real_ip| headers_map.insert("X-Real-IP", real_ip));
 
     Ok(client.request(req).await?)
-}
-
-// Redirect any non-HTTPS requests to HTTP.
-async fn redirect_to_https<B>(
-    Host(hostname): Host,
-    req: Request<B>,
-    next: Next<B>,
-) -> Result<Response, HttpError> {
-    let proto: &str = req
-        .headers()
-        .get("x-forwarded-proto")
-        .map(|header| header.to_str().unwrap_or("https"))
-        .unwrap_or("https");
-
-    if proto == "http" {
-        let mut parts = req.uri().clone().into_parts();
-        parts.scheme = Some(Scheme::HTTPS);
-        // Read from `Host` header since the incoming request's authority is empty.
-        parts.authority = Some(Authority::try_from(&hostname[..])?);
-
-        let uri: String = Uri::from_parts(parts)?.to_string();
-
-        Ok((StatusCode::MOVED_PERMANENTLY, [(header::LOCATION, uri)]).into_response())
-    } else {
-        Ok(next.run(req).await)
-    }
 }
 
 // Music shortlink.
