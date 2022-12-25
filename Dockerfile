@@ -26,4 +26,4 @@ RUN apk --no-cache add ca-certificates libgcc openssl-dev
 COPY --from=app-builder /ofcrse/target/release/ofcrse .
 COPY --from=site-builder /site/dist/ ./dist/
 CMD ["/app/ofcrse"]
-EXPOSE 8080
+EXPOSE 3000
