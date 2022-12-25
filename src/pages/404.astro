@@ -43,13 +43,13 @@ const origin = Astro.site.origin;
         color: #ADC153;
       }
 
-      #heading {
+      h1 {
         margin: 0 0 10px;
         font-weight: bold;
         font-size: 3em;
       }
 
-      #missing {
+      p {
         margin: 0;
         font-family: Inter, "Helvetica Neue", "Arial", sans-serif;
         font-size: 1.6em;
@@ -66,7 +66,7 @@ const origin = Astro.site.origin;
 </head>
 <body>
   <h1 id="heading">404</h1>
-  <p id="missing">
+  <p>
     The link you’re looking for couldn’t be found.<br>
     <a href={`${origin}/`}>Head home?</a>
   </p>

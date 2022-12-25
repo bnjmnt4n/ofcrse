@@ -42,7 +42,7 @@ const origin = Astro.site.origin;
         color: #ADC153;
       }
 
-      #heading {
+      h1 {
         margin: 0 0 10px;
         font-weight: bold;
         font-size: 3em;
@@ -72,7 +72,7 @@ const origin = Astro.site.origin;
   />
 </head>
 <body>
-  <h1 id="heading">500</h1>
+  <h1>500</h1>
   <p>An error has occurred.</p>
   <!-- ERROR -->
   <p><a href={`${origin}/`}>Head home?</a></p>
@@ -81,7 +81,7 @@ const origin = Astro.site.origin;
     src={`${origin}/vendor/count.js`}
     data-goatcounter={`${origin}/count`}
   />
-  <script>
+  <script is:inline>
     const newLink = document.createElement("a");
     newLink.textContent = "Reload";
     newLink.href = location.href;
