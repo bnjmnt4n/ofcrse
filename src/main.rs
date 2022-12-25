@@ -80,9 +80,9 @@ async fn main() -> Result<(), color_eyre::Report> {
     // Required for both the standalone `/` path and the wildcard path.
     let app = initialize_app(app, app_state.clone(), "/");
     let app = initialize_app(app, app_state, "/*path");
-    // TODO: return 404 file.
-    let app = app.fallback(|| async { Err::<(), HttpError>(HttpError::NotFound) });
-    let app = app.layer(TraceLayer::new_for_http());
+    let app = app
+        .fallback(|| async { Err::<(), HttpError>(HttpError::NotFound) })
+        .layer(TraceLayer::new_for_http());
 
     axum::Server::bind(&address)
         .serve(app.into_make_service())

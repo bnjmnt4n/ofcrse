@@ -1,7 +1,7 @@
 // Based on https://fasterthanli.me/series/updating-fasterthanli-me-for-2022/part-2.
 
 use axum::{
-    http::{self, StatusCode},
+    http::{self, header, StatusCode},
     response::{IntoResponse, Response},
 };
 use color_eyre::Report;
@@ -48,8 +48,11 @@ impl HttpError {
                 let _ = writeln!(&mut err_string, "{}. {}", i + 1, e);
             }
 
+            let err_string = html_escape::encode_safe(&err_string);
+
             let backtrace: String = if let Some(bt) = maybe_bt {
-                format!("{:?}", bt)
+                let backtrace = format!("{:?}", bt);
+                html_escape::encode_safe(&backtrace).into()
             } else {
                 "".into()
             };
@@ -84,12 +87,29 @@ impl_from!(http::uri::InvalidUriParts);
 impl_from!(hyper::Error);
 impl_from!(serde_json::Error);
 
+const ERROR_404: &[u8] = include_bytes!("../dist/404.html");
+const ERROR_500: &str = include_str!("../dist/500.html");
+const CONTENT_TYPE_HTML: &str = "text/html";
+
 impl IntoResponse for HttpError {
     fn into_response(self) -> Response {
         match self {
-            // TODO: display 404 file.
-            HttpError::NotFound => (StatusCode::NOT_FOUND, "").into_response(),
-            HttpError::Internal { err } => (StatusCode::INTERNAL_SERVER_ERROR, err).into_response(),
+            HttpError::NotFound => (
+                StatusCode::NOT_FOUND,
+                [(header::CONTENT_TYPE, CONTENT_TYPE_HTML)],
+                ERROR_404,
+            )
+                .into_response(),
+            HttpError::Internal { err } => {
+                let err = format!("<pre>{}</pre>", err);
+                let contents = ERROR_500.replace("<!-- ERROR -->", &err);
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    [(header::CONTENT_TYPE, CONTENT_TYPE_HTML)],
+                    contents,
+                )
+                    .into_response()
+            }
         }
     }
 }
