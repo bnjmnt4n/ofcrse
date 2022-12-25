@@ -4,13 +4,62 @@ on:
   push:
     branches:
       - main
+      - dev
+      - rust-server
   workflow_dispatch:
 
-# Based on https://github.com/kentcdodds/kentcdodds.com/blob/cfc5f7b55763a23b739efb5f0a08085bf5efd7ea/.github/workflows/deployment.yml#L168-L231.
-
 jobs:
-  build:
+  build-site:
     name: Build site
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: npm
+      - name: Build site
+        run: |
+          npm ci
+          npm run build
+      - name: Archive site
+        uses: actions/upload-artifact@v3
+        with:
+          name: site
+          path: dist
+
+  build-server:
+    name: Build server
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: rust-cache-${{ runner.os }}-${{ hashFiles('**/Cargo.lock') }}
+      - name: Setup Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: 1.66.0
+          override: true
+      - name: Build server
+        run: cargo build --release
+      - name: Archive binary
+        uses: actions/upload-artifact@v3
+        with:
+          name: ofcrse
+          path: target/release/ofcrse
+
+  deploy:
+    name: Deploy site
+    needs: [build-site, build-server]
+    if:
+      ${{ github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev' || github.ref == 'refs/heads/rust-server') }}
     runs-on: ubuntu-latest
     steps:
       - name: Cancel previous instances of the workflow
@@ -28,14 +77,6 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
 
-      - name: Cache Docker layers
-        uses: actions/cache@v3
-        with:
-          path: /tmp/.buildx-cache
-          key: ${{ runner.os }}-buildx-${{ github.sha }}
-          restore-keys: |
-            ${{ runner.os }}-buildx-
-
       - name: Authenticate to Fly.io registry
         uses: docker/login-action@v2
         with:
@@ -43,7 +84,7 @@ jobs:
           username: x
           password: ${{ secrets.FLY_API_TOKEN }}
 
-      - name: Docker build
+      - name: Build and push Docker image
         uses: docker/build-push-action@v3
         with:
           context: .
@@ -52,23 +93,23 @@ jobs:
             registry.fly.io/${{ steps.app_name.outputs.value }}:${{ github.ref_name }}-${{ github.sha }}
           build-args: |
             COMMIT_SHA=${{ github.sha }}
-          cache-from: type=local,src=/tmp/.buildx-cache
-          cache-to: type=local,mode=max,dest=/tmp/.buildx-cache-new
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
-      # This ugly bit is necessary to prevent the cache from growing to hit the 5GB limit.
-      # See:
-      # - https://github.com/docker/build-push-action/issues/252
-      # - https://github.com/moby/buildkit/issues/1896
-      - name: Move cache
-        run: |
-          rm -rf /tmp/.buildx-cache
-          mv /tmp/.buildx-cache-new /tmp/.buildx-cache
-
-      - name: Deploy
+      - name: Deploy to staging
+        if: ${{ github.ref == 'refs/heads/dev' || github.ref == 'refs/heads/rust-server' }}
         uses: superfly/flyctl-actions@1.3
         with:
           args:
-            'deploy --image
-            registry.fly.io/${{ steps.app_name.outputs.value }}:${{ github.ref_name }}-${{ github.sha }}'
+            'deploy --app ${{ steps.app_name.outputs.value }}-dev --image registry.fly.io/${{ steps.app_name.outputs.value }}:${{ github.ref_name }}-${{ github.sha }}'
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+
+      - name: Deploy to production
+        if: ${{ github.ref == 'refs/heads/main' }}
+        uses: superfly/flyctl-actions@1.3
+        with:
+          args:
+            'deploy --image registry.fly.io/${{ steps.app_name.outputs.value }}:${{ github.ref_name }}-${{ github.sha }}'
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
