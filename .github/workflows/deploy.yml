@@ -31,6 +31,7 @@ jobs:
 
   build-server:
     name: Build server
+    needs: [build-site]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -47,6 +48,11 @@ jobs:
           profile: minimal
           toolchain: 1.66.0
           override: true
+      - name: Download site files
+        uses: actions/download-artifact@v3
+        with:
+          name: site
+          path: dist
       - name: Build server
         run: cargo build --release
       - name: Archive binary
