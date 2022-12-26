@@ -26,7 +26,7 @@ use tracing::{info, Span};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 const DEFAULT_PORT: i32 = 3000;
-const DEFAULT_SITE_URL: &str = "http://localhost:3000/";
+const DEFAULT_SITE_URL: &str = "http://localhost:3000";
 const DEFAULT_SHORTLINKS_FILE: &str = "shortlinks.json";
 
 #[derive(Clone)]
@@ -145,7 +145,11 @@ fn initialize_app(app: Router, app_state: AppState, path: &str) -> Router {
     let music_shortlink = app_state.shortlinks.get("music").cloned();
     let music_shortlink_app = music_shortlink_router(music_shortlink).with_state(());
 
-    let shortlink_app = shortlinks_router(app_state.site_url, app_state.shortlinks).with_state(());
+    let shortlink_app =
+        shortlinks_router(app_state.site_url.clone(), app_state.shortlinks).with_state(());
+
+    let redirect_to_primary_site =
+        redirect_to_primary_site_router(app_state.site_url).with_state(());
 
     let health_check_app = health_check_router().with_state(());
 
@@ -156,6 +160,7 @@ fn initialize_app(app: Router, app_state: AppState, path: &str) -> Router {
                 "health.check" => health_check_app,
                 "l.ofcr.se" => shortlink_app,
                 "music.ofcr.se" => music_shortlink_app,
+                "ofcrse.fly.dev" => redirect_to_primary_site,
                 _ => primary_app,
             };
             router.oneshot(request).await
@@ -240,6 +245,21 @@ fn shortlinks_router(site_url: String, shortlinks: HashMap<String, String>) -> R
                 }
             }),
         )
+}
+
+// Redirect back to primary app.
+fn redirect_to_primary_site_router(site_url: String) -> Router {
+    Router::new().fallback(|req: Request<Body>| async move {
+        let path = req
+            .uri()
+            .path_and_query()
+            .map(|v| v.as_str())
+            .unwrap_or_else(|| req.uri().path());
+
+        let uri = format!("{}{}", site_url, path);
+
+        (StatusCode::MOVED_PERMANENTLY, [(header::LOCATION, uri)])
+    })
 }
 
 // Health check app for fly.io.
