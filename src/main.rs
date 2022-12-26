@@ -1,12 +1,13 @@
 use std::collections::HashMap;
 use std::io::BufReader;
 use std::net::SocketAddr;
+use std::time::Duration;
 
 mod error;
 
 use crate::error::HttpError;
 use axum::{
-    body::Body,
+    body::{Body, BoxBody},
     extract::{FromRef, Host, Path, State},
     http::{header, Request, StatusCode},
     response::Response,
@@ -14,14 +15,14 @@ use axum::{
     Router,
 };
 use color_eyre::Report;
-use hyper::{client::HttpConnector, Uri};
+use hyper::{client::HttpConnector, HeaderMap, Uri};
 use hyper_tls::HttpsConnector;
 use tower::ServiceExt;
 use tower_http::{
     services::{ServeDir, ServeFile},
     trace::TraceLayer,
 };
-use tracing::info;
+use tracing::{info, Span};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 const DEFAULT_PORT: i32 = 3000;
@@ -76,19 +77,58 @@ async fn main() -> Result<(), color_eyre::Report> {
         shortlinks,
     };
 
+    let tracing_layer = TraceLayer::new_for_http()
+        .make_span_with(|request: &Request<Body>| {
+            let headers = request.headers();
+            let host = get_header(headers, "host");
+            let user_agent = get_header(headers, "user-agent");
+            let client_ip = get_header(headers, "fly-client-ip");
+            let referer = get_header(headers, "referer");
+
+            tracing::info_span!(
+                "request",
+                method = %request.method(),
+                uri = %request.uri(),
+                version = ?request.version(),
+                ?host,
+                ?client_ip,
+                ?user_agent,
+                ?referer,
+            )
+        })
+        .on_request(|_: &Request<Body>, _: &Span| {
+            tracing::info!("started processing request");
+        })
+        .on_response(
+            |response: &Response<BoxBody>, latency: Duration, _span: &Span| {
+                tracing::info!(
+                    latency = format_args!("{} ms", latency.as_millis()),
+                    status = %response.status(),
+                    response_length = ?get_header(response.headers(), "content-length"),
+                    "finished processing request"
+                )
+            },
+        );
+
     let app = Router::new();
     // Required for both the standalone `/` path and the wildcard path.
     let app = initialize_app(app, app_state.clone(), "/");
     let app = initialize_app(app, app_state, "/*path");
     let app = app
         .fallback(|| async { Err::<(), HttpError>(HttpError::NotFound) })
-        .layer(TraceLayer::new_for_http());
+        .layer(tracing_layer);
 
     axum::Server::bind(&address)
         .serve(app.into_make_service())
         .await?;
 
     Ok(())
+}
+
+fn get_header<'a>(headers: &'a HeaderMap, header_name: &'static str) -> Option<&'a str> {
+    headers
+        .get(header_name)
+        .and_then(|header_value| header_value.to_str().map_or(None, Some))
 }
 
 type Client = hyper::client::Client<HttpsConnector<HttpConnector>, Body>;
