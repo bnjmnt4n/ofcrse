@@ -1,14 +1,15 @@
 FROM node:18-alpine as site-builder
+ARG NPM_BUILD_COMMAND=build
 WORKDIR /site
 COPY package.json package-lock.json .
 RUN npm clean-install
 COPY astro.config.mjs .
 COPY public/ ./public/
 COPY src/pages/ ./src/pages/
-RUN npm run build
+RUN npm run $NPM_BUILD_COMMAND
 
 FROM rust:1.66-alpine as app-builder
-RUN apk --no-cache add libc-dev make openssl-dev perl pkgconfig
+RUN apk add --no-cache libc-dev make openssl-dev perl pkgconfig
 RUN USER=root cargo new --bin ofcrse
 WORKDIR /ofcrse
 COPY Cargo.lock Cargo.toml .
@@ -23,7 +24,7 @@ RUN cargo build --release
 
 FROM alpine:3.17
 WORKDIR /app
-RUN apk --no-cache add ca-certificates libgcc openssl-dev
+RUN apk add --no-cache ca-certificates libgcc openssl-dev
 COPY --from=app-builder /ofcrse/target/release/ofcrse .
 COPY --from=site-builder /site/dist/ ./dist/
 CMD ["/app/ofcrse"]

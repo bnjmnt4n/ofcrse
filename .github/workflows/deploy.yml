@@ -22,7 +22,9 @@ jobs:
       - name: Build site
         run: |
           npm ci
-          npm run build
+          npm run $NPM_BUILD_COMMAND
+        env:
+          NPM_BUILD_COMMAND: ${{ github.ref == 'refs/heads/main' && 'build' || 'build-dev' }}
       - name: Archive site
         uses: actions/upload-artifact@v3
         with:
@@ -43,11 +45,7 @@ jobs:
             target
           key: rust-cache-${{ runner.os }}-${{ hashFiles('**/Cargo.lock') }}
       - name: Setup Rust
-        uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: 1.66.0
-          override: true
+        run: rustup update --no-self-update $RUST_VERSION && rustup default $RUST_VERSION
       - name: Download site files
         uses: actions/download-artifact@v3
         with:
@@ -99,6 +97,7 @@ jobs:
             registry.fly.io/${{ steps.app_name.outputs.value }}:${{ github.ref_name }}-${{ github.sha }}
           build-args: |
             COMMIT_SHA=${{ github.sha }}
+            NPM_BUILD_COMMAND=${{ github.ref == 'refs/heads/main' && 'build' || 'build-dev' }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
