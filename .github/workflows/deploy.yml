@@ -6,7 +6,6 @@ on:
       - main
       - dev
       - rust-server
-  workflow_dispatch:
 
 jobs:
   build-site:
