@@ -17,6 +17,7 @@ use axum::{
 };
 use color_eyre::Report;
 use hyper::{client::HttpConnector, HeaderMap, Uri};
+use hyper_rustls::HttpsConnector;
 use tower::ServiceExt;
 use tower_http::{
     services::{ServeDir, ServeFile},
@@ -138,11 +139,15 @@ fn get_header<'a>(headers: &'a HeaderMap, header_name: &'static str) -> Option<&
         .and_then(|header_value| header_value.to_str().map_or(None, Some))
 }
 
-type Client = hyper::client::Client<HttpConnector, Body>;
+type Client = hyper::client::Client<HttpsConnector<HttpConnector>, Body>;
 
 fn initialize_app(app: Router, app_state: AppState, path: &str) -> Router {
-    let http_connector = HttpConnector::new();
-    let client = hyper::Client::builder().build(http_connector);
+    let https_connector = hyper_rustls::HttpsConnectorBuilder::new()
+        .with_webpki_roots()
+        .https_or_http()
+        .enable_http1()
+        .build();
+    let client = hyper::Client::builder().build(https_connector);
 
     let primary_app = primary_router().with_state(PrimaryAppState {
         client,
