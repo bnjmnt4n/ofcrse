@@ -1,3 +1,6 @@
+---
+const origin = Astro.site.origin;
+---
 <!doctype html>
 <html lang="en">
 <head>
@@ -106,9 +109,9 @@
     © 2022 by Benjamin Tan
   </footer>
   <script
-    src="/vendor/count.js"
     async
-    data-goatcounter="/count">
-  </script>
+    src={`${origin}/vendor/count.v3.js`}
+    data-goatcounter={`${origin}/count`}
+  />
 </body>
 </html>
