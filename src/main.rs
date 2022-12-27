@@ -168,7 +168,7 @@ fn initialize_app(app: Router, app_state: AppState, path: &str) -> Router {
                 "health.check" => health_check_app,
                 "l.ofcr.se" => shortlink_app,
                 "music.ofcr.se" => music_shortlink_app,
-                "ofcrse.fly.dev" => redirect_to_primary_site,
+                "oftcour.se" | "ofcrse.fly.dev" => redirect_to_primary_site,
                 _ => primary_app,
             };
             router.oneshot(request).await
