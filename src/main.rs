@@ -10,7 +10,7 @@ use crate::error::HttpError;
 use axum::{
     body::{Body, BoxBody},
     extract::{ConnectInfo, FromRef, Host, Path, State},
-    http::{header, Request, StatusCode},
+    http::{header, HeaderValue, Request, StatusCode},
     response::Response,
     routing::{any, get, get_service},
     Router,
@@ -219,7 +219,14 @@ async fn goatcounter_proxy(
     headers_map.insert("Host", goatcounter_host.parse().unwrap());
     headers_map
         .remove("fly-client-ip")
-        .and_then(|real_ip| headers_map.insert("X-Real-IP", real_ip));
+        .or_else(|| {
+            req.extensions()
+                .get::<ConnectInfo<SocketAddr>>()
+                .and_then(|ConnectInfo(addr)| {
+                    HeaderValue::from_str(&addr.to_string()).map_or(None, Some)
+                })
+        })
+        .and_then(|addr| req.headers_mut().insert("X-Real-IP", addr));
 
     Ok(client.request(req).await?)
 }
