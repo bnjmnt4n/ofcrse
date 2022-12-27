@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use std::collections::HashMap;
 use std::io::BufReader;
 use std::net::SocketAddr;
@@ -8,7 +9,7 @@ mod error;
 use crate::error::HttpError;
 use axum::{
     body::{Body, BoxBody},
-    extract::{FromRef, Host, Path, State},
+    extract::{ConnectInfo, FromRef, Host, Path, State},
     http::{header, Request, StatusCode},
     response::Response,
     routing::{any, get, get_service},
@@ -82,7 +83,14 @@ async fn main() -> Result<(), color_eyre::Report> {
             let headers = request.headers();
             let host = get_header(headers, "host");
             let user_agent = get_header(headers, "user-agent");
-            let client_ip = get_header(headers, "fly-client-ip");
+            let client_ip: Option<Cow<str>> = get_header(headers, "fly-client-ip")
+                .map(Cow::Borrowed)
+                .or_else(|| {
+                    request
+                        .extensions()
+                        .get::<ConnectInfo<SocketAddr>>()
+                        .map(|ConnectInfo(addr)| Cow::Owned(addr.to_string()))
+                });
             let referer = get_header(headers, "referer");
 
             tracing::info_span!(
@@ -119,7 +127,7 @@ async fn main() -> Result<(), color_eyre::Report> {
         .layer(tracing_layer);
 
     axum::Server::bind(&address)
-        .serve(app.into_make_service())
+        .serve(app.into_make_service_with_connect_info::<SocketAddr>())
         .await?;
 
     Ok(())
