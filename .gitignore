@@ -1,7 +1,4 @@
 node_modules
 dist
-
-
-# Added by cargo
-
 /target
+.astro
