@@ -8,7 +8,7 @@ COPY public/ ./public/
 COPY src/pages/ ./src/pages/
 RUN npm run $NPM_BUILD_COMMAND
 
-FROM rust:1.66-alpine as app-builder
+FROM rust:1.70-alpine as app-builder
 RUN apk add --no-cache libc-dev make perl pkgconfig
 RUN USER=root cargo new --bin ofcrse
 WORKDIR /ofcrse
@@ -22,7 +22,7 @@ COPY src/*.rs ./src/
 COPY --from=site-builder /site/dist/ ./dist/
 RUN cargo build --release
 
-FROM alpine:3.17
+FROM alpine:3.18
 WORKDIR /app
 RUN apk add --no-cache libgcc
 COPY --from=app-builder /ofcrse/target/release/ofcrse .
