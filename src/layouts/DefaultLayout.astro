@@ -1,0 +1,26 @@
+---
+import "../styles/fonts.css";
+import "../styles/global.css";
+import Head from "../components/Head.astro";
+import Navigation from "../components/Navigation.astro";
+import Scripts from "../components/Scripts.astro";
+
+export interface Props {
+  title?: string;
+  description?: string;
+  error?: boolean
+}
+
+const { title, description, error = false } = Astro.props;
+---
+<!doctype html>
+<html lang="en">
+<Head title={title} description={description} usePageContentForMetadata={!error} />
+<body>
+  <Navigation />
+  <section>
+    <slot />
+  </section>
+  <Scripts />
+</body>
+</html>
