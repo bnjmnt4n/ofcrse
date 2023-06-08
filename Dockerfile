@@ -5,7 +5,7 @@ COPY package.json package-lock.json .
 RUN npm clean-install
 COPY astro.config.mjs .
 COPY public/ ./public/
-COPY src/pages/ ./src/pages/
+COPY src/ ./src/
 RUN npm run $NPM_BUILD_COMMAND
 
 FROM rust:1.70-alpine as app-builder
