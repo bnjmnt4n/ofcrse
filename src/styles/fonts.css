@@ -1,0 +1,55 @@
+@font-face {
+  font-family: "Basier Square Narrow";
+  font-weight: 400;
+  font-style: normal;
+  src: url(/assets/fonts/basiersquarenarrow-regular-webfont.woff2) format("woff2");
+}
+
+@font-face {
+  font-family: "Basier Square Narrow";
+  font-weight: 400;
+  font-style: italic;
+  src: url(/assets/fonts/basiersquarenarrow-regularitalic-webfont.woff2) format("woff2");
+}
+
+@font-face {
+  font-family: "Basier Square Narrow";
+  font-weight: 700;
+  font-style: normal;
+  src: url(/assets/fonts/basiersquarenarrow-bold-webfont.woff2) format("woff2");
+}
+
+@font-face {
+  font-family: "Basier Square Narrow";
+  font-weight: 700;
+  font-style: italic;
+  src: url(/assets/fonts/basiersquarenarrow-bolditalic-webfont.woff2) format("woff2");
+}
+
+@font-face {
+  font-family: "Basier Square Mono";
+  font-weight: 400;
+  font-style: normal;
+  src: url(/assets/fonts/basiersquaremono-regular-webfont.woff2) format("woff2");
+}
+
+@font-face {
+  font-family: "Basier Square Mono";
+  font-weight: 400;
+  font-style: italic;
+  src: url(/assets/fonts/basiersquaremono-regularitalic-webfont.woff2) format("woff2");
+}
+
+@font-face {
+  font-family: "Basier Square Mono";
+  font-weight: 700;
+  font-style: normal;
+  src: url(/assets/fonts/basiersquaremono-bold-webfont.woff2) format("woff2");
+}
+
+@font-face {
+  font-family: "Basier Square Mono";
+  font-weight: 700;
+  font-style: italic;
+  src: url(/assets/fonts/basiersquaremono-bolditalic-webfont.woff2) format("woff2");
+}

@@ -1,0 +1,147 @@
+:root {
+  --font-serif: Georgia, ui-serif, Cambria, Times New Roman, Times, serif;
+  /* TODO: Add more fallbacks... */
+  --font-sans-serif: Basier Square Narrow, Arial, sans-serif;
+  --font-monospace: Basier Square Mono, Consolas, monospace;
+
+  --color-bg-primary: #fdfdfa;
+  --color-bg-secondary: #f3c6d1;
+  --color-bg-secondary: #ffa4ba;
+  --color-bg-tertiary: #fedada;
+  --color-bg-quaternary: #f8eaea;
+  --color-fg-primary: #301940;
+  --color-fg-secondary: #83758c;
+  --color-fg-tertiary: #d6c9c5;
+  /* TODO: Iterate on accent color. */
+  /* --color-fg-accent: #44a9a7; */
+  --color-fg-accent: #128886;
+
+  --animation-timing-long: 0.3s;
+  --animation-timing-default: 0.15s;
+}
+
+html {
+  scroll-padding: 2rem 0;
+  background-color: var(--color-bg-primary);
+  color: var(--color-fg-primary);
+  font-size: 20px;
+  font-family: var(--font-serif);
+}
+
+body {
+  max-width: 620px;
+  margin: 1rem auto;
+  padding: 0 1.5rem 2rem;
+  font-size: 1rem;
+  line-height: 1.7;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  margin-bottom: 0;
+  font-family: var(--font-sans-serif);
+  font-weight: normal;
+}
+
+section h1 {
+  font-size: 2em;
+}
+
+p {
+  margin: 0 0 1rem;
+}
+
+blockquote {
+  margin-left: 24px;
+  padding-left: 24px;
+  border-left: 4px solid var(--color-fg-secondary);
+}
+
+pre {
+  margin: 1.5rem -1.5rem;
+  padding: 1.5rem;
+  overflow: auto;
+  border: 1px solid var(--color-fg-tertiary);
+  background-color: var(--color-bg-primary) !important;
+  color: var(--color-fg-primary);
+}
+
+pre, code {
+  font-family: var(--font-monospace);
+  font-size: 0.9rem;
+  line-height: 1.125;
+}
+
+pre code {
+  background-color: inherit;
+}
+
+code {
+  background-color: var(--color-bg-quaternary);
+}
+
+li::marker {
+  color: var(--color-fg-secondary);
+}
+
+mark {
+  display: inline-block;
+  background-color: var(--color-bg-secondary);
+}
+
+:target {
+  outline: dotted;
+  outline-offset: 0.3rem;
+  outline-color: var(--color-fg-accent);
+}
+
+a {
+  color: var(--color-fg-primary);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  transition: color var(--animation-timing-default) ease-out,
+              text-decoration var(--animation-timing-default) ease-out;
+}
+
+a:hover {
+  color: var(--color-fg-accent);
+  text-decoration-thickness: 3px;
+}
+
+::selection {
+  background-color: var(--color-bg-tertiary);
+}
+
+#nav + section, #nav + article {
+  margin-top: 80px;
+}
+
+@media (min-width: 720px) {
+  html {
+    font-size: 24px;
+  }
+
+  body {
+    padding-left: 2rem;
+    padding-right: 2rem;
+  }
+
+  ol, ul {
+    padding-left: 0;
+  }
+
+  li > ul, li > ol {
+    padding-left: 1rem;
+  }
+
+  pre {
+    border-radius: 4px;
+  }
+
+  blockquote {
+    margin-left: -1.5rem;
+  }
+
+  #nav + section, #nav + article {
+    margin-top: 100px;
+  }
+}
