@@ -1,0 +1,86 @@
+---
+const { origin } = Astro.site!;
+const { pathname } = Astro.url;
+---
+<style>
+  ul {
+    display: flex;
+    padding: 0;
+    gap: 12px;
+    list-style: none;
+
+    font-family: var(--font-sans-serif);
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    color: var(--color-fg-primary);
+  }
+
+  a {
+    text-decoration: none;
+    position: relative;
+  }
+
+  a::after {
+    content: '';
+    display: block;
+    position: absolute;
+    top: 100%;
+    height: 3px;
+    width: 100%;
+
+    will-change: transform;
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: all var(--animation-timing-long) ease-in-out;
+
+    background-color: var(--color-fg-accent);
+  }
+
+  a:hover {
+    color: var(--color-fg-accent);
+  }
+
+  a[data-active]:not([data-home])::after,
+  a:hover::after {
+    transform: scaleX(100%);
+  }
+
+  a[data-home] {
+    font-weight: bold;
+    text-transform: none;
+    background: var(--color-fg-primary);
+    background: linear-gradient(
+      to right,
+      var(--color-fg-accent) 33.333333333%,
+      var(--color-fg-primary) 66.6666666666%
+    );
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+
+    background-size: 300%;
+    background-repeat: repeat;
+    background-position: top left;
+
+    animation: bg-scroll-ltr var(--animation-timing-long) 0.15s ease-in-out forwards;
+  }
+
+  a[data-home]:hover {
+    animation: bg-scroll-rtl var(--animation-timing-long) ease-in-out forwards;
+  }
+
+  @keyframes bg-scroll-ltr {
+    0% { background-position: top left; }
+    100% { background-position: top right; }
+  }
+
+  @keyframes bg-scroll-rtl {
+    0% { background-position: top right; }
+    100% { background-position: top left; }
+  }
+</style>
+<nav id="nav">
+  <ul>
+    <li><a href={`${origin}/`} data-home data-active={pathname === "/"}>ofcrse</a></li>
+    <li><a href={`${origin}/about`} data-active={pathname === "/about"}>About</a></li>
+  </ul>
+</nav>

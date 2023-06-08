@@ -1,0 +1,50 @@
+---
+import { CANONICAL_SITE_URL, SITE_TITLE, SITE_DESCRIPTION } from "../consts";
+
+export interface Props {
+  title?: string | undefined;
+  description?: string;
+  image?: string;
+  usePageContentForMetadata?: boolean;
+  article?: boolean;
+}
+
+const canonicalSite = new URL(CANONICAL_SITE_URL);
+const canonicalUrl = new URL(Astro.url.pathname, canonicalSite);
+const {
+  title: titleProp,
+  description = SITE_DESCRIPTION,
+  usePageContentForMetadata = true,
+  article: isArticle,
+} = Astro.props;
+
+const title = titleProp ? `${titleProp} | ${SITE_TITLE}` : SITE_TITLE;
+const socialTitle = usePageContentForMetadata ? title : SITE_TITLE;
+---
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link rel="icon" href="data:,">
+
+  <title>{title}</title>
+  <meta name="description" content={description} />
+  {usePageContentForMetadata && <link rel="canonical" href={canonicalUrl} />}
+
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content={isArticle ? "article" : "website"} />
+  <meta property="og:title" content={socialTitle} />
+  <meta property="og:description" content={description} />
+  {usePageContentForMetadata && <meta property="og:url" content={Astro.url} />}
+  <!--
+    <meta property="og:image" content={new URL(image, Astro.url)} />
+  -->
+
+  <!-- Twitter -->
+  <meta property="twitter:card" content="summary_large_image" />
+  <meta property="twitter:title" content={socialTitle} />
+  <meta property="twitter:description" content={description} />
+  {usePageContentForMetadata && <meta property="twitter:url" content={Astro.url} />}
+  <!--
+    <meta property="twitter:image" content={new URL(image, Astro.url)} />
+  -->
+</head>
