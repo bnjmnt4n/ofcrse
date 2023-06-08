@@ -51,6 +51,7 @@
           buildInputs = [
             pkgs.flyctl
             pkgs.nodejs-18_x
+            pkgs.nodePackages."@astrojs/language-server"
             rust
             pkgs.rust-analyzer
           ];
