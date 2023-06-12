@@ -64,6 +64,11 @@ const { pathname } = Astro.url;
     animation: bg-scroll-ltr var(--animation-timing-long) 0.15s ease-in-out forwards;
   }
 
+  #nav:target a[data-home]{
+    animation: bg-scroll-rtl var(--animation-timing-long) ease-in-out forwards,
+      bg-scroll-ltr var(--animation-timing-long) 5s ease-in-out forwards;
+  }
+
   a[data-home]:hover {
     animation: bg-scroll-rtl var(--animation-timing-long) ease-in-out forwards;
   }
