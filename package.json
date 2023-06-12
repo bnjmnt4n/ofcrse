@@ -4,9 +4,9 @@
   "description": "Benjamin Tan’s homepage",
   "main": "index.js",
   "scripts": {
-    "start": "astro dev --site \"http://localhost:3000/\"",
+    "start": "astro dev --drafts --site \"http://localhost:3000/\"",
     "build": "astro build",
-    "build-dev": "astro build --site \"https://ofcrse-dev.fly.dev/\"",
+    "build-dev": "astro build --drafts --site \"https://ofcrse-dev.fly.dev/\"",
     "build-local": "astro build --site \"http://localhost:3000/\"",
     "preview": "astro preview"
   },
@@ -25,8 +25,12 @@
     "astro": "^2.5.6"
   },
   "devDependencies": {
+    "@types/markdown-it": "^12.2.3",
+    "@types/sanitize-html": "^2.9.0",
+    "markdown-it": "^13.0.1",
     "prettier": "^2.8.8",
     "prettier-plugin-astro": "^0.10.0",
-    "remark-heading-id": "^1.0.0"
+    "remark-heading-id": "^1.0.0",
+    "sanitize-html": "^2.10.0"
   }
 }

@@ -29,6 +29,7 @@ const socialTitle = usePageContentForMetadata ? title : SITE_TITLE;
   <title>{title}</title>
   <meta name="description" content={description} />
   {usePageContentForMetadata && <link rel="canonical" href={canonicalUrl} />}
+  <link rel="alternate" type="application/rss+xml" title="Writing" href="/rss.xml" />
 
   <!-- Open Graph / Facebook -->
   <meta property="og:type" content={isArticle ? "article" : "website"} />
