@@ -1,0 +1,49 @@
+---
+import type { MarkdownHeading } from "astro";
+import TableOfContentsHeading from "./TableOfContentsHeading.astro";
+
+export interface Props {
+  headings: MarkdownHeading[];
+}
+
+export type Heading = MarkdownHeading & {
+  subheadings: Heading[];
+};
+
+// Based on https://kld.dev/building-table-of-contents/.
+function buildToc(headings: MarkdownHeading[]) {
+  const toc: Heading[] = [];
+  const parentHeadings = new Map();
+
+  headings.forEach((h) => {
+    const heading = { ...h, subheadings: [] };
+    parentHeadings.set(heading.depth, heading);
+    if (heading.depth === 2) {
+      toc.push(heading);
+    } else {
+      parentHeadings.get(heading.depth - 1).subheadings.push(heading);
+    }
+  });
+
+  return toc;
+}
+
+const toc = buildToc(Astro.props.headings);
+---
+<style>
+  @media (min-width: 1440px) {
+    ol {
+      padding-left: 0;
+    }
+
+    :global(li > ol) {
+      padding-left: 18px;
+      list-style-type: inside;
+    }
+  }
+</style>
+<nav>
+  <ol>
+    {toc.map((heading) => <TableOfContentsHeading heading={heading} />)}
+  </ol>
+</nav>

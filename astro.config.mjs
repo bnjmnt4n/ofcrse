@@ -5,4 +5,10 @@ export default defineConfig({
   site: "https://ofcr.se/",
   integrations: [sitemap()],
   scopedStyleStrategy: "class",
+  markdown: {
+    shikiConfig: {
+      theme: 'github-light',
+      wrap: false,
+    },
+  },
 });
