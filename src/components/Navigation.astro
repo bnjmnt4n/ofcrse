@@ -86,6 +86,7 @@ const { pathname } = Astro.url;
 <nav id="nav">
   <ul>
     <li><a href={`${origin}/`} data-home data-active={pathname === "/"}>ofcrse</a></li>
+    <li><a href={`${origin}/writing`} data-active={pathname === "/writing"}>Writing</a></li>
     <li><a href={`${origin}/about`} data-active={pathname === "/about"}>About</a></li>
   </ul>
 </nav>

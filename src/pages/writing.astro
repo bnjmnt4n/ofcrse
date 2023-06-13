@@ -1,0 +1,19 @@
+---
+import DefaultLayout from "../layouts/DefaultLayout.astro";
+import { getArticles } from "../utils/getArticles";
+
+const articles = await getArticles();
+---
+<DefaultLayout title="Writing">
+  <h1>Writing</h1>
+  <p>
+    On occasion, I string words together into long, rambly, run-on sentences. Here's where you can view some of them:
+  </p>
+  {articles.map((article) => (
+    <section>
+      <h2>{article.data.title}</h2>
+      <p>{article.data.description}</p>
+      <a href={article.slug}>Read more</a>
+    </section>
+  ))}
+</DefaultLayout>
