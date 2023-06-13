@@ -1,5 +1,6 @@
 import { defineConfig } from "astro/config";
 import sitemap from "@astrojs/sitemap";
+import remarkHeadingId from "remark-heading-id";
 
 export default defineConfig({
   site: "https://ofcr.se/",
@@ -10,5 +11,6 @@ export default defineConfig({
       theme: 'github-light',
       wrap: false,
     },
+    remarkPlugins: [remarkHeadingId],
   },
 });
