@@ -199,7 +199,7 @@ fn primary_router() -> Router<PrimaryAppState> {
         .route("/count", any(goatcounter_proxy))
         .route("/count/", any(goatcounter_proxy))
         .route("/count/*path", any(goatcounter_proxy))
-        .fallback_service(get_service(file_server).handle_error(handle_error))
+        .fallback_service(get_service(file_server))
 }
 
 #[axum::debug_handler(state = PrimaryAppState)]
@@ -290,10 +290,6 @@ fn redirect_to_primary_site_router(site_url: String) -> Router {
 // Health check app for fly.io.
 fn health_check_router() -> Router {
     Router::new().route("/healthz", get(|| async { "ok" }))
-}
-
-async fn handle_error(err: std::io::Error) -> HttpError {
-    err.into()
 }
 
 fn read_shortlinks_from_file<P: AsRef<std::path::Path>>(
