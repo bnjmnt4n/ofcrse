@@ -16,6 +16,11 @@ function buildToc(headings: MarkdownHeading[]) {
   const parentHeadings = new Map();
 
   headings.forEach((h) => {
+    // Skip adding footnotes to the table of contents.
+    if (h.slug === "footnote-label") {
+      return;
+    }
+
     const heading = { ...h, subheadings: [] };
     parentHeadings.set(heading.depth, heading);
     if (heading.depth === 2) {
