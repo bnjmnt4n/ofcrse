@@ -65,6 +65,10 @@ const {
       background-color: var(--color-bg-quaternary);
     }
 
+    article .content :global(aside p:last-child) {
+      margin-bottom: 0;
+    }
+
     article .content :global(.footnotes) {
       margin-top: 3rem;
       padding: 1rem 0;
@@ -75,6 +79,7 @@ const {
     article .content :global(.footnotes code) {
       font-size: 0.9em;
     }
+
     @media (min-width: 1440px) {
       body {
         --sidebar-width: 300px;
