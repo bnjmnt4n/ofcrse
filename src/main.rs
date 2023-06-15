@@ -11,7 +11,8 @@ use axum::{
     body::{Body, BoxBody},
     extract::{ConnectInfo, FromRef, Host, Path, State},
     http::{header, HeaderValue, Request, StatusCode},
-    response::Response,
+    middleware::{self, Next},
+    response::{IntoResponse, Response},
     routing::{any, get, get_service},
     Router,
 };
@@ -192,14 +193,79 @@ struct PrimaryAppState {
     goatcounter: (String, String),
 }
 
+const CONTENT_TYPE_JS: &[u8] = b"application/javascript";
+const CONTENT_TYPE_CSS: &[u8] = b"text/css";
+const CONTENT_TYPE_WOFF2: &[u8] = b"font/woff2";
+
 // Primary static file server.
 fn primary_router() -> Router<PrimaryAppState> {
     let file_server = ServeDir::new("dist").not_found_service(ServeFile::new("dist/404.html"));
+
+    async fn custom_middleware<B>(mut request: Request<B>, next: Next<B>) -> Response {
+        // Remove trailing slashes.
+        if request.uri().path().ends_with("/") && request.uri().path() != "/" {
+            let proto = get_header(request.headers(), "x-forwarded-proto").unwrap_or("http");
+            let host = get_header(request.headers(), "host").unwrap_or("");
+            let path = request.uri().path().strip_suffix("/").unwrap();
+            let query = request.uri().query();
+
+            let uri = format!(
+                "{}://{}{}{}{}",
+                proto,
+                host,
+                path,
+                if query.is_some() { "?" } else { "" },
+                query.unwrap_or("")
+            );
+
+            (StatusCode::TEMPORARY_REDIRECT, [(header::LOCATION, uri)]).into_response()
+        } else {
+            let path = request.uri().path();
+
+            // Assume path is a directory if there is no `.` in the path.
+            if !path.contains(".") {
+                let query = request.uri().query();
+
+                let uri = format!(
+                    "{}/index.html{}{}",
+                    path,
+                    if query.is_some() { "?" } else { "" },
+                    query.unwrap_or("")
+                );
+
+                if let Ok(uri) = Uri::try_from(uri) {
+                    *request.uri_mut() = uri
+                }
+            }
+
+            let mut response = next.run(request).await;
+
+            // Add `Cache-Control` rules for static assets (JS/CSS/WOFF2).
+            // TODO: images?
+            match response
+                .headers()
+                .get("content-type")
+                .map(|header| header.as_bytes())
+            {
+                Some(CONTENT_TYPE_JS) | Some(CONTENT_TYPE_CSS) | Some(CONTENT_TYPE_WOFF2) => {
+                    response
+                        .headers_mut()
+                        .insert("Cache-Control", "public, max-age=31536000".parse().unwrap());
+                }
+                _ => {}
+            }
+
+            response
+        }
+    }
+
     Router::new()
         .route("/count", any(goatcounter_proxy))
         .route("/count/", any(goatcounter_proxy))
         .route("/count/*path", any(goatcounter_proxy))
         .fallback_service(get_service(file_server))
+        // TODO: Apply middleware only to file server.
+        .layer(middleware::from_fn(custom_middleware))
 }
 
 #[axum::debug_handler(state = PrimaryAppState)]
