@@ -53,6 +53,7 @@
             pkgs.nodejs-18_x
             pkgs.nodePackages."@astrojs/language-server"
             pkgs.nodePackages.typescript-language-server
+            pkgs.resvg
             rust
             pkgs.rust-analyzer
           ];
