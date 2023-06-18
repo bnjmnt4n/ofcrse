@@ -15,6 +15,7 @@ const {
   title: titleProp,
   description = SITE_DESCRIPTION,
   usePageContentForMetadata = true,
+  image = '/assets/images/covers/default.png',
   article: isArticle,
 } = Astro.props;
 
@@ -36,16 +37,12 @@ const socialTitle = usePageContentForMetadata ? title : SITE_TITLE;
   <meta property="og:title" content={socialTitle} />
   <meta property="og:description" content={description} />
   {usePageContentForMetadata && <meta property="og:url" content={Astro.url} />}
-  <!--
-    <meta property="og:image" content={new URL(image, Astro.url)} />
-  -->
+  <meta property="og:image" content={new URL(image, Astro.url)} />
 
   <!-- Twitter -->
   <meta property="twitter:card" content="summary_large_image" />
   <meta property="twitter:title" content={socialTitle} />
   <meta property="twitter:description" content={description} />
   {usePageContentForMetadata && <meta property="twitter:url" content={Astro.url} />}
-  <!--
-    <meta property="twitter:image" content={new URL(image, Astro.url)} />
-  -->
+  <meta property="twitter:image" content={new URL(image, Astro.url)} />
 </head>
