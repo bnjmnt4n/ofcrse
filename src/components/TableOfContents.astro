@@ -52,3 +52,51 @@ const toc = buildToc(Astro.props.headings);
     {toc.map((heading) => <TableOfContentsHeading heading={heading} />)}
   </ol>
 </nav>
+<!-- NOTE: keep in sync with CSS -->
+<script>
+  function updateTableOfContentsSection(entries: IntersectionObserverEntry[]) {
+    // Get entry with largest intersection ratio.
+    const intersectingEntries = entries
+      .filter((entry) => entry.isIntersecting)
+      .sort((a, b) => b.intersectionRatio - a.intersectionRatio);
+
+    const entry = intersectingEntries[0];
+    console.log(entry);
+    if (!entry) return;
+
+    Array.from(document.querySelectorAll(".toc li a.active")).forEach(link => {
+      link.classList.remove("active");
+    })
+
+    const element = document.querySelector(`.toc li a[href="#${entry.target.id}"]`);
+    if (element) {
+      element.classList.add("active");
+    }
+  }
+
+  let observer: IntersectionObserver;
+
+  function openTableOfContents() {
+    if (window.innerWidth >= 1440) {
+      document.querySelector("details")!.setAttribute("open", "open");
+
+      if (observer) return;
+      observer = new IntersectionObserver(updateTableOfContentsSection, {
+        root: null,
+        rootMargin: "0px",
+        threshold: 1.0,
+      });
+
+      Array.from(document.querySelectorAll("h2, h3, h4, h5, h6")).forEach(element => {
+        console.log(element);
+        observer.observe(element);
+      });
+    } else {
+      observer.disconnect();
+      observer = null;
+    }
+  }
+
+  openTableOfContents();
+  window.addEventListener("resize", openTableOfContents, false);
+</script>

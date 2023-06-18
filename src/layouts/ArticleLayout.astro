@@ -2,10 +2,12 @@
 import type { MarkdownHeading } from "astro";
 import "../styles/fonts.css";
 import "../styles/global.css";
+import Date from "../components/Date.astro";
 import Head from "../components/Head.astro";
 import Navigation from "../components/Navigation.astro";
 import Scripts from "../components/Scripts.astro";
 import TableOfContents from "../components/TableOfContents.astro";
+import TwitterIcon from "../components/icons/TwitterIcon.astro";
 
 export interface Props {
   slug: string;
@@ -40,8 +42,25 @@ const {
       display: none;
     }
 
-    .sidebar .article a {
+    :global(svg) {
+      position: relative;
+      width: 0.7rem;
+      height: 0.7rem;
+      top: 0.08rem;
+      left: 0.08rem;
+    }
+
+    a:hover :global(svg.icon-twitter) {
+      color: #1DA1F2;
+    }
+
+    .sidebar .article a,
+    .sidebar .written-by a {
       text-decoration: none;
+    }
+
+    .sidebar .written-by a:hover {
+      color: var(--color-fg-primary);
     }
 
     .sidebar strong::after {
@@ -88,6 +107,7 @@ const {
 
       article h1 {
         font-size: 4rem;
+        margin-top: 0;
         margin-bottom: 2rem;
         letter-spacing: -0.02em;
         line-height: 1.1;
@@ -119,7 +139,6 @@ const {
         position: sticky;
         top: 24px;
         bottom: 24px;
-        margin-top: 76px;
 
         display: flex;
         flex-direction: column;
@@ -132,8 +151,27 @@ const {
         overflow: auto;
       }
 
+      .toc :global(a) {
+        text-decoration: none;
+      }
+
+      .toc :global(a:hover) {
+        text-decoration: none;
+        text-decoration-thickness: 1px;
+      }
+
+      .toc :global(.active) {
+        color: var(--color-fg-accent);
+        text-decoration: underline;
+        text-decoration-thickness: 2px;
+      }
+
       .sidebar div {
         padding: 0.8rem 1.5rem;
+      }
+
+      .sidebar div:not(.toc) {
+        line-height: 1.4;
       }
 
       .sidebar div:not(:first-child) {
@@ -142,6 +180,12 @@ const {
 
       .sidebar strong {
         display: block;
+      }
+
+      .sidebar strong,
+      .sidebar summary {
+        text-transform: uppercase;
+        font-size: 0.7rem;
       }
 
       .sidebar .article {
@@ -158,11 +202,16 @@ const {
         {" "}
         <a href={slug}>{title} 🔗</a>
       </div>
+      <div class="written-by">
+        <strong>Written by</strong>
+        {" "}
+        <span><a href="https://twitter.com/bnjmnt4n">Benjamin Tan <TwitterIcon /></a></span>
+      </div>
       {publishedAt ? (
         <div>
           <strong>Published on</strong>
           {" "}
-          <span>{publishedAt}</span>
+          <Date date={publishedAt} />
         </div>
       ) : (
         <div>
@@ -174,7 +223,7 @@ const {
       {updatedAt && (
         <div>
           <strong>Updated on</strong>
-          <span>{updatedAt}</span>
+          <Date date={updatedAt} />
         </div>
       )}
       <div class="toc">
@@ -188,12 +237,6 @@ const {
       <slot />
     </div>
   </article>
-  <!-- NOTE: keep in sync with CSS -->
-  <script is:inline>
-    if (window.innerWidth >= 1440) {
-      document.querySelector("details").setAttribute("open", true);
-    }
-  </script>
   <Scripts />
 </body>
 </html>
