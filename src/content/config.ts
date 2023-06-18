@@ -5,14 +5,11 @@ const articles = defineCollection({
     title: z.string(),
     description: z.string(),
     publishedAt: z
-      .string()
-      .or(z.date())
-      .optional()
-      .transform((val) => (val ? new Date(val) : undefined)),
+      .date()
+      .optional(),
     updatedAt: z
-      .string()
+      .date()
       .optional()
-      .transform((str) => (str ? new Date(str) : undefined)),
   }),
 });
 
