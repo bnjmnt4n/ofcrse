@@ -1,8 +1,10 @@
 ---
 const { origin } = Astro.site!;
 ---
+
 <script
+  is:inline
   async
   src={`${origin}/vendor/count.v3.js`}
   data-goatcounter={`${origin}/count`}
-/>
+></script>
