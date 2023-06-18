@@ -1,7 +1,7 @@
 {
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs?rev=5e871d8aa6f57cc8e0dc087d1c5013f6e212b4ce";
-    flake-utils.url = "github:numtide/flake-utils?rev=cfacdce06f30d2b68473a46042957675eebb3401";
+    nixpkgs.url = "github:NixOS/nixpkgs?rev=0eeebd64de89e4163f4d3cf34ffe925a5cf67a05";
+    flake-utils.url = "github:numtide/flake-utils?rev=a1720a10a6cfe8234c0e93907ffe81be440f4cef";
     crane = {
       url = "github:ipetkov/crane";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -52,6 +52,7 @@
             pkgs.flyctl
             pkgs.nodejs-18_x
             pkgs.nodePackages."@astrojs/language-server"
+            pkgs.nodePackages.typescript-language-server
             rust
             pkgs.rust-analyzer
           ];
