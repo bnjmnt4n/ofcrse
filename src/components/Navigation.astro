@@ -1,6 +1,12 @@
 ---
+export interface Props {
+  activePath?: string;
+}
+
 const { origin } = Astro.site!;
 const { pathname } = Astro.url;
+
+const { activePath } = Astro.props;
 ---
 <style>
   ul {
@@ -85,8 +91,8 @@ const { pathname } = Astro.url;
 </style>
 <nav id="nav">
   <ul>
-    <li><a href={`${origin}/`} data-home data-active={pathname === "/"}>ofcrse</a></li>
-    <li><a href={`${origin}/writing`} data-active={pathname === "/writing"}>Writing</a></li>
-    <li><a href={`${origin}/about`} data-active={pathname === "/about"}>About</a></li>
+    <li><a href={`${origin}/`} data-home data-active={pathname === "/" || activePath === "/"}>ofcrse</a></li>
+    <li><a href={`${origin}/writing`} data-active={pathname === "/writing" || activePath === "/writing"}>Writing</a></li>
+    <li><a href={`${origin}/about`} data-active={pathname === "/about" || activePath === "/about"}>About</a></li>
   </ul>
 </nav>
