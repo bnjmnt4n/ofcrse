@@ -18,7 +18,7 @@ const post = Astro.props;
 const { headings, Content } = await post.render();
 let ogImage = undefined;
 if (post.data.cover === true || typeof post.data.cover === "object") {
-  ogImage = `/images/covers/${post.slug}.png`;
+  ogImage = `/images/cover/${post.slug}.png`;
 }
 ---
 <ArticleLayout {...post.data} slug={post.slug} headings={headings} ogImage={ogImage}>
