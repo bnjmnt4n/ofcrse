@@ -53,7 +53,6 @@
             pkgs.nodejs-18_x
             pkgs.nodePackages."@astrojs/language-server"
             pkgs.nodePackages.typescript-language-server
-            pkgs.resvg
             pkgs.ttfautohint
             (pkgs.python3.withPackages(ps: [ps.fonttools] ++ ps.fonttools.optional-dependencies.woff))
             rust

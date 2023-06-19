@@ -1,6 +1,8 @@
 ---
 title: Working with Postgres Row Level Security
 description: Comprehensive notes on working with row level security policies in Postgres, with a particular focus on performance.
+cover:
+  title: "Working with\nPostgres Row Level Security"
 ---
 Since 2016, Postgres has included a feature called [row security policies](https://www.postgresql.org/docs/current/ddl-rowsecurity.html), perhaps better known as row-level security (RLS) policies. RLS lets access to database tables be restricted on a per-row basis when executing a query. This is done through creating policies which act similarly to `where` clauses in SQL statements.
 
