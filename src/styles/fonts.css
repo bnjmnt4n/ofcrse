@@ -31,33 +31,33 @@
 }
 
 @font-face {
-  font-family: "Basier Square Mono";
+  font-family: "Iosevka Web";
   font-weight: 400;
   font-style: normal;
   font-display: block;
-  src: url(/assets/fonts/basiersquaremono-regular-webfont.woff2) format("woff2");
+  src: url(/assets/fonts/iosevka-custom-regular.subset.woff2) format("woff2");
 }
 
 @font-face {
-  font-family: "Basier Square Mono";
+  font-family: "Iosevka Web";
   font-weight: 400;
   font-style: italic;
   font-display: block;
-  src: url(/assets/fonts/basiersquaremono-regularitalic-webfont.woff2) format("woff2");
+  src: url(/assets/fonts/iosevka-custom-italic.subset.woff2) format("woff2");
 }
 
 @font-face {
-  font-family: "Basier Square Mono";
+  font-family: "Iosevka Web";
   font-weight: 700;
   font-style: normal;
   font-display: block;
-  src: url(/assets/fonts/basiersquaremono-bold-webfont.woff2) format("woff2");
+  src: url(/assets/fonts/iosevka-custom-bold.subset.woff2) format("woff2");
 }
 
 @font-face {
-  font-family: "Basier Square Mono";
+  font-family: "Iosevka Web";
   font-weight: 700;
   font-style: italic;
   font-display: block;
-  src: url(/assets/fonts/basiersquaremono-bolditalic-webfont.woff2) format("woff2");
+  src: url(/assets/fonts/iosevka-custom-bolditalic.subset.woff2) format("woff2");
 }

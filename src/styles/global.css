@@ -2,7 +2,7 @@
   --font-serif: Georgia, ui-serif, Cambria, Times New Roman, Times, serif;
   --font-sans-serif: Basier Square Narrow, Arial Narrow, Arial, sans-serif;
   /* TODO: Add more fallbacks... */
-  --font-monospace: Basier Square Mono, Consolas, monospace;
+  --font-monospace: Iosevka Web, Consolas, monospace;
 
   --color-bg-primary: #fdfdfa;
   --color-bg-secondary: #f3c6d1;
