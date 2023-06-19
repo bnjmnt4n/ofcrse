@@ -3,7 +3,7 @@
   font-weight: 400;
   font-style: normal;
   font-display: block;
-  src: url(/assets/fonts/basiersquarenarrow-regular-webfont.woff2) format("woff2");
+  src: url(/assets/fonts/basiersquarenarrow-regular-webfont.subset.woff2) format("woff2");
 }
 
 @font-face {
@@ -11,7 +11,7 @@
   font-weight: 400;
   font-style: italic;
   font-display: block;
-  src: url(/assets/fonts/basiersquarenarrow-regularitalic-webfont.woff2) format("woff2");
+  src: url(/assets/fonts/basiersquarenarrow-regularitalic-webfont.subset.woff2) format("woff2");
 }
 
 @font-face {
@@ -19,7 +19,7 @@
   font-weight: 700;
   font-style: normal;
   font-display: block;
-  src: url(/assets/fonts/basiersquarenarrow-bold-webfont.woff2) format("woff2");
+  src: url(/assets/fonts/basiersquarenarrow-bold-webfont.subset.woff2) format("woff2");
 }
 
 @font-face {
@@ -27,7 +27,7 @@
   font-weight: 700;
   font-style: italic;
   font-display: block;
-  src: url(/assets/fonts/basiersquarenarrow-bolditalic-webfont.woff2) format("woff2");
+  src: url(/assets/fonts/basiersquarenarrow-bolditalic-webfont.subset.woff2) format("woff2");
 }
 
 @font-face {
