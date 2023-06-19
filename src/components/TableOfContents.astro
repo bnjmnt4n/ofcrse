@@ -61,7 +61,6 @@ const toc = buildToc(Astro.props.headings);
       .sort((a, b) => b.intersectionRatio - a.intersectionRatio);
 
     const entry = intersectingEntries[0];
-    console.log(entry);
     if (!entry) return;
 
     Array.from(document.querySelectorAll(".toc li a.active")).forEach(link => {
@@ -88,7 +87,6 @@ const toc = buildToc(Astro.props.headings);
       });
 
       Array.from(document.querySelectorAll("h2, h3, h4, h5, h6")).forEach(element => {
-        console.log(element);
         observer.observe(element);
       });
     } else {
