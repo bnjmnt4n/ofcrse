@@ -4,6 +4,8 @@ description: Comprehensive notes on working with row level security policies in 
 cover:
   title: "Working with\nPostgres Row Level Security"
 ---
+## Introduction
+
 Since 2016, Postgres has included a feature called [row security policies](https://www.postgresql.org/docs/current/ddl-rowsecurity.html), perhaps better known as row-level security (RLS) policies. RLS lets access to database tables be restricted on a per-row basis when executing a query. This is done through creating policies which act similarly to `where` clauses in SQL statements.
 
 For example, instead of manually adding a `where` clause to a given query:
@@ -1026,7 +1028,7 @@ Here's a checklist of the main points to take note of when writing RLS policies:
 
 <aside>
 
-Whew! We've finally reached the end of the post! This article initially started as just a short list of points (like above), but some of the points didn't semm paricularly useful without additional context. I added the example schema to demonstrate some points, and then I added more points, and then this article just begin to go on and on...
+Whew! We've finally reached the end of the post! This article initially started as just a short list of points (like above), but some of the points didn't seem particularly useful without additional context. I added the example schema to demonstrate some points, and then I added more points, and then this article just begin to go on and on...
 
 </aside>
 
