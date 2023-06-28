@@ -1,11 +1,15 @@
 ---
 import DefaultLayout from "../layouts/DefaultLayout.astro";
+import Date from "../components/Date.astro";
 import TwitterIcon from "../components/icons/TwitterIcon.astro";
 import GitHubIcon from "../components/icons/GitHubIcon.astro";
 import EmailIcon from "../components/icons/EmailIcon.astro";
+import { getArticles } from "../utils/getArticles";
+
+const articles = await getArticles();
 ---
 <style>
-  p {
+  p.tagline {
     font-size: 2em;
     line-height: 1.4;
     font-family: var(--font-sans-serif);
@@ -22,8 +26,8 @@ import EmailIcon from "../components/icons/EmailIcon.astro";
     line-height: 1;
   }
 
-  a {
-    display: flex;
+  nav a {
+    display: inline-flex;
     align-items: center;
     justify-content: center;
     padding: 0;
@@ -33,7 +37,7 @@ import EmailIcon from "../components/icons/EmailIcon.astro";
     transition: border var(--animation-timing-default) ease-out;
   }
 
-  a:hover {
+  nav a:hover {
     border-bottom-width: 3px;
     color: var(--color-fg-primary);
   }
@@ -45,11 +49,11 @@ import EmailIcon from "../components/icons/EmailIcon.astro";
     top: -0.08rem;
   }
 
-  a:hover :global(svg.icon-twitter) {
+  nav a:hover :global(svg.icon-twitter) {
     color: #1DA1F2;
   }
 
-  a:hover :global(svg) {
+  nav a:hover :global(svg) {
     animation: vibrate var(--animation-timing-default) 3s ease-in-out forwards 2;
   }
 
@@ -61,14 +65,42 @@ import EmailIcon from "../components/icons/EmailIcon.astro";
     100% { transform: translate(0, 0) rotate(0); }
   }
 
+  h2 {
+    margin: 4rem 0 1rem;
+    font-weight: bold;
+    font-size: 1rem;
+    text-transform: uppercase;
+    letter-spacing: -0.01rem;
+  }
+
+  section {
+    font-size: 0.9rem;
+  }
+
+  section header {
+    display: flex;
+    gap: 12px;
+    align-items: end;
+  }
+
+  section header h3 {
+    margin-top: 0;
+  }
+
+  section header :global(time) {
+    font-family: var(--font-sans-serif);
+    font-size: 0.8rem;
+    color: var(--color-fg-secondary);
+  }
+
   @media (min-width: 720px) {
-    p span {
+    p.tagline span {
       display: inline-block;
     }
   }
 </style>
 <DefaultLayout>
-  <p>
+  <p class="tagline">
     <span>Hi, I’m <strong>Benjamin Tan</strong>,</span>{" "}
     <span>a software engineer from Singapore.</span><br />
     <span>I build products &amp; construct experiences using modern web technologies.</span>
@@ -80,4 +112,15 @@ import EmailIcon from "../components/icons/EmailIcon.astro";
       <li><a href="mailto:benjamin@ofcr.se"><span>Email</span> <EmailIcon /></a></li>
     </ul>
   </nav>
+
+  <h2>Writing</h2>
+  {articles.map((article) => (
+    <section>
+      <header>
+        <h3><a href={`${article.slug}`}>{article.data.title}</a></h3>
+        <Date date={article.data.publishedAt!} />
+      </header>
+      <p>{article.data.description}</p>
+    </section>
+  ))}
 </DefaultLayout>
