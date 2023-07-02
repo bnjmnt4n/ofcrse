@@ -203,10 +203,11 @@ fn primary_router() -> Router<PrimaryAppState> {
 
     async fn custom_middleware<B>(mut request: Request<B>, next: Next<B>) -> Response {
         // Remove trailing slashes.
-        if request.uri().path().ends_with("/") && request.uri().path() != "/" {
+        let path = request.uri().path();
+        if path.ends_with("/") && path != "/" && !path.starts_with("/count") {
             let proto = get_header(request.headers(), "x-forwarded-proto").unwrap_or("http");
             let host = get_header(request.headers(), "host").unwrap_or("");
-            let path = request.uri().path().strip_suffix("/").unwrap();
+            let path = path.strip_suffix("/").unwrap();
             let query = request.uri().query();
 
             let uri = format!(
@@ -214,14 +215,12 @@ fn primary_router() -> Router<PrimaryAppState> {
                 proto,
                 host,
                 path,
-                if query.is_some() { "?" } else { "" },
+                query.map_or("", |_| "?"),
                 query.unwrap_or("")
             );
 
             (StatusCode::TEMPORARY_REDIRECT, [(header::LOCATION, uri)]).into_response()
         } else {
-            let path = request.uri().path();
-
             // Assume path is a directory if there is no `.` in the path.
             if !path.contains(".") {
                 let query = request.uri().query();
@@ -229,7 +228,7 @@ fn primary_router() -> Router<PrimaryAppState> {
                 let uri = format!(
                     "{}/index.html{}{}",
                     path,
-                    if query.is_some() { "?" } else { "" },
+                    query.map_or("", |_| "?"),
                     query.unwrap_or("")
                 );
 
