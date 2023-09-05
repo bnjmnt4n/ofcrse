@@ -6,7 +6,7 @@
 
   --color-bg-primary: #fdfdfa;
   --color-bg-secondary: #f3c6d1;
-  --color-bg-secondary: #ffa4ba;
+  /* --color-bg-secondary: #ffa4ba; */
   --color-bg-tertiary: #fedada;
   --color-bg-quaternary: #f8eaea;
   --color-fg-primary: #301940;
@@ -76,7 +76,7 @@ pre {
 
   border: 1px solid var(--color-fg-tertiary);
 
-  background-color: var(--color-bg-primary) !important;
+  /* background-color: var(--color-bg-primary) !important; */
   color: var(--color-fg-primary);
   line-height: 1.5;
 }
@@ -114,7 +114,6 @@ li::marker {
 
 mark {
   display: inline-block;
-  background-color: var(--color-bg-secondary);
 }
 
 :target {
@@ -144,6 +143,7 @@ a:hover {
 }
 
 ::selection {
+  color: var(--color-fg-primary);
   background-color: var(--color-bg-tertiary);
 }
 

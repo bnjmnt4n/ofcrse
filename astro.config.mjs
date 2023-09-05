@@ -8,7 +8,7 @@ export default defineConfig({
   scopedStyleStrategy: "class",
   markdown: {
     shikiConfig: {
-      theme: 'github-light',
+      theme: 'github-dark-dimmed',
       wrap: false,
     },
     remarkPlugins: [remarkHeadingId],
