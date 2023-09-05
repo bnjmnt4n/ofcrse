@@ -38,7 +38,7 @@ In this article, I'd like to go through some notes and considerations to be awar
 
 ## Example schema {#schema}
 
-I'm using a simplified version of a workspace-based multi-tenant application as an example. I won't be building out the full schema, but will reference specific parts for use when relevant. Here's our schema requirements:
+I'm using a simplified version of a workspace-based multi-tenant application as an example (think [Notion](https://www.notion.so/help/intro-to-workspaces)). I won't be building out the full schema, but will reference specific parts for use when relevant. Here's our schema requirements:
 
 - Users can belong to multiple workspaces.
 - Each workspace can have multiple users (known as workspace members).
@@ -149,7 +149,7 @@ SET
 COMMIT
 ```
 
-In Supabase, this can be done using the [`auth.uid()`](https://supabase.com/docs/guides/auth/row-level-security#authuid) function.
+Typically, you'll also have a utility function which extracts the user ID from the setting. In Supabase, this can be done using the [`auth.uid()`](https://supabase.com/docs/guides/auth/row-level-security#authuid) function.
 
 ## Performance analysis {#performance}
 
@@ -220,6 +220,8 @@ ERROR:  infinite recursion detected in policy for relation "workspace_members"
 
 ROLLBACK
 ```
+
+😢😭😔
 
 ## Security definer functions to avoid recursive policies {#security-definer-functions}
 
@@ -323,11 +325,11 @@ SET
 COMMIT
 ```
 
-Even though the result only contains 15 rows, the generated query plan performs a sequential scan on the `workspace_members` table. The thing is, even a typical sequential scan on a large table shouldn't be taking so long (1.6 seconds)! What's happening here is that for each row in the table, Postgres has to do a function call to check if the RLS policy is satisfied. Typically, one or two function calls per query is not expensive, but here we're executing up to 200,000 function calls, each of which return the results of their own queries. The cost of switching between the current query and the invoked function's context adds up, resulting in a really slow query.
+Even though the result only contains 15 rows, the generated query plan performs a sequential scan on the `workspace_members` table. The thing is, even a typical sequential scan on a large table shouldn't be taking so long (1.6 seconds)! What's happening here is that for each row in the table, Postgres has to do a function call to check if the RLS policy is satisfied. Typically, one or two function calls per query is not expensive, but here we're executing up to 200,000 function calls, each of which return the results of their own queries. The cost of switching between the current query to a separate function call context to execute the function's query adds up, resulting in a really slow query.
 
-Instead, policies should be restructured to avoid running a function for every row in the table. A common pattern would be to use the function to get a list of identifiers for valid rows in the current table, then check if the current row is a valid row in the policy.
+Instead, policies should be restructured to avoid running a function for every row in the table. A common way to do this is to use the function to get a list of identifiers for valid rows in the current table, then check if the current row is a valid row in the policy.
 
-For `workspace_members` here, this would mean getting the list of workspace IDs which a user has access to, and check if the current row in `workspace_members` belongs to one of those workspaces:
+For `workspace_members` here, this would mean getting the list of workspace IDs which a user has access to, and checking if the current row in `workspace_members` belongs to one of those workspaces:
 
 ```sql
 postgres=#
@@ -382,7 +384,7 @@ Now, instead of running the function once per row, we're executing the function 
 
 ## Use uncorrelated subqueries when possible {#uncorrelated-subqueries}
 
-[Subqueries](https://www.postgresql.org/docs/current/functions-subquery.html) are nested `select` statements within the main SQL statement. Uncorrelated subqueries are subqueries which do not depend on any columns in the outer query. In the previous example, the subquery in the policy is an uncorrelated subquery, since `select get_workspaces_for_auth_user()` does not reference any columns in the outer query.
+[Subqueries](https://www.postgresql.org/docs/current/functions-subquery.html) are nested `select` statements within the main SQL statement. Uncorrelated subqueries are subqueries which do not depend on any columns in the outer query. In the previous example, the subquery in the policy is an uncorrelated subquery, since `select get_workspaces_for_auth_user()` does not reference any columns from the outer query.
 
 Using uncorrelated subqueries can allow the subquery to be extracted out into an [`InitPlan`](https://www.depesz.com/2013/05/19/explaining-the-unexplainable-part-4/#init-plan) node by the query planner. `InitPlan` nodes are executed once at the start of a query, and have their results stored for use by other nodes in the query plan. They are especially useful for boolean conditions—if a query depends solely on a boolean which is returned by an uncorrelated subquery, the whole query can just be skipped when the boolean returns `false`.
 
@@ -402,7 +404,7 @@ using (select is_admin());
 
 This ties in well with the previous point: If your functions are written so that they don't depend on column values from the table being policed, they can be used as an uncorrelated subquery.
 
-Note that not all uses of uncorrelated subqueries can be converted into `InitPlan`s. We'll take a look at some specifics later.
+Note that not all uncorrelated subqueries can be converted into `InitPlan`s. We'll take a look at some specifics later.
 
 ## Be as specific as possible when defining security definer functions {#function-definitions}
 
@@ -414,7 +416,7 @@ By default, functions are assumed to be `volatile`:
   >
   > — <cite>[PostgreSQL Documentation: Function Volatility Categories](https://www.postgresql.org/docs/current/xfunc-volatility.html)</cite>
 
-If you can't use the function in an uncorrelated subquery, using a volatile function might cause the function to be called multiple times in a given query, even if you know that the query results do not change. Instead, mark the function as `stable`:
+If you can't use the function in an uncorrelated subquery, using a volatile function might cause the function to be called multiple times in a given query, even if the query results do not change. Instead, mark the function as `stable`:
 
   > A STABLE function cannot modify the database and is guaranteed to return the same results given the same arguments for all rows within a single statement. This category allows the optimizer to optimize multiple calls of the function to a single call. In particular, it is safe to use an expression containing such a function in an index scan condition. (Since an index scan will evaluate the comparison value only once, not once at each row, it is not valid to use a VOLATILE function in an index scan condition.)
   >
@@ -431,7 +433,7 @@ select workspace_id
 from workspace_members
 where user_id = current_setting('rls.user_id', true)::uuid
 $$ security definer
--- UPDATED!
+-- ↓↓↓ UPDATED HERE ↓↓↓
 stable rows 10;
 CREATE FUNCTION
 ```
@@ -440,55 +442,20 @@ Just changing the row estimates might not directly lead to a faster query plan, 
 
 Another possible modification, with a greater degree of risk, is to manually specify the estimated cost of the function. For example, if you're using a function which cannot be extracted into a uncorrelated subquery, and the query plan shows that the function is being repeatedly called even though a single call would be sufficient, setting the function's cost as a high enough value might prompt the query planner to only call the function once. This tweak is particularly risky since the cost estimates for a query can change drastically over time as the dataset changes. **Only do this if you're aware of the potential drawbacks.**
 
-## Be careful when adding multiple policies to the same table {#multiple-policies}
-
-There are two different types of RLS policies:
-1. permissive policies (the default), which are combined using `or`; and
-1. restrictive policies, which are combined using `and`.
-
-It's convenient to add multiple permissive policies which get joined together using `or` . However, `or` conditions are much harder to optimize than `and` conditions—`and` conditions restrict the size of the query output while `or` conditions increase the size of the query output.
-
-Depending on the database schemas, sometimes there isn't a choice on whether to use an `or` condition to perform RLS policy checks, such as if the checks are on different columns. However, if you're using multiple policies to perform checks on the same column, especially if you're using multiple function calls, it's generally cheaper to combine them into a single check:
-
-```sql
--- Before:
-create policy "Users can CRUD all of their workspaces"
-on workspaces
-using (id in (select get_workspaces_for_auth_user()));
-
-create policy "Users can CRUD globally editable workspaces"
-on workspaces
-using (id in (select get_globally_editable_workspaces()));
-
--- After:
-create policy "Users can CRUD their own and globally editable workspaces"
-on workspaces
-using (
-  id in (
-    select get_workspaces_for_auth_user()
-    union all
-    select get_globally_editable_workspaces()
-  )
-);
-```
-
 ## Non-leakproof functions and operators causes can prevent index scans {#non-leakproof}
 
-Using functions and operators which are not leakproof can prevent index scans from being performed, and cause fallback to slower scan types:
+Using functions and operators which are not leakproof can prevent index scans from being performed, and cause fallbacks to slower scan types:
 
   > LEAKPROOF indicates that the function has no side effects. It reveals no information about its arguments other than by its return value. For example, a function which throws an error message for some argument values but not others, or which includes the argument values in any error message, is not leakproof. This affects how the system executes queries against views created with the security_barrier option or tables with row level security enabled. The system will enforce conditions from security policies and security barrier views before any user-supplied conditions from the query itself that contain non-leakproof functions, in order to prevent the inadvertent exposure of data. Functions and operators marked as leakproof are assumed to be trustworthy, and may be executed before conditions from security policies and security barrier views. In addition, functions which do not take arguments or which are not passed any arguments from the security barrier view or table do not have to be marked as leakproof to be executed before security conditions.
   >
   > — <cite>[PostgreSQL Documentation: CREATE FUNCTION](https://www.postgresql.org/docs/current/sql-createfunction.html)</cite>
 
-If a query condition uses a non-leakproof function/operator, and there is an active RLS policy, it might prevent the condition from using an index it would otherwise have used.
+If a query condition uses a non-leakproof function/operator, and there is an active RLS policy, it *might* prevent the condition from using an index it would otherwise have used.
 
-For example, let's allow users to search for others by name. We'll create a GIN index with the `pg_trgm` extension to allow to optimize this query. However, we'll also add an RLS policy to restrict which users can be seen.
+For example, let's allow users to search for others by email. Since emails are typically case insensitive, we'll create a index on `lower(email)` to optimize this query. We'll also add an RLS policy to restrict which users can be seen.
 
 ```sql
-postgres=# create extension pg_trgm;
-CREATE EXTENSION
-
-postgres=# create index on users using gin (name gin_trgm_ops);
+postgres=# create index on users using (lower(email));
 CREATE INDEX
 
 postgres=#
@@ -502,7 +469,7 @@ $$ security definer
 stable rows 30;
 CREATE FUNCTION
 
-postgres=# create policy "Users have access restricted based on a random policy"
+postgres=# create policy "Users can view users in their workspaces"
 on users
 using (id in (select get_visible_users_for_auth_user()));
 CREATE POLICY
@@ -517,27 +484,27 @@ set local "rls.user_id" to 'a74c6f1e-b6ac-4088-b468-6c1987146721';
 
 explain analyze
   select * from users
-  where name ilike '%test';
+  where lower(email) = 'placeholder@email1.com';
 end;
 BEGIN
 SET
 SET
-                                            QUERY PLAN
+                                              QUERY PLAN
 ------------------------------------------------------------------------------------------------------
- Seq Scan on users  (cost=0.49..2637.49 rows=80 width=61) (actual time=29.900..29.901 rows=0 loops=1)
- Filter: ((hashed SubPlan 1) AND ((name)::text ~~* '%test'::text))
- Rows Removed by Filter: 100000
- SubPlan 1
-   ->  ProjectSet  (cost=0.00..0.42 rows=30 width=16) (actual time=5.879..5.960 rows=15 loops=1)
-         ->  Result  (cost=0.00..0.01 rows=1 width=0) (actual time=0.001..0.001 rows=1 loops=1)
- Planning Time: 0.150 ms
- Execution Time: 30.496 ms
+ Seq Scan on users  (cost=0.49..2887.49 rows=250 width=61) (actual time=4.767..11.361 rows=1 loops=1)
+   Filter: ((hashed SubPlan 1) AND (lower((email)::text) = 'placeholder@email1.com'::text))
+   Rows Removed by Filter: 99999
+   SubPlan 1
+     ->  ProjectSet  (cost=0.00..0.42 rows=30 width=16) (actual time=0.918..0.990 rows=15 loops=1)
+           ->  Result  (cost=0.00..0.01 rows=1 width=0) (actual time=0.000..0.001 rows=1 loops=1)
+ Planning Time: 0.329 ms
+ Execution Time: 11.387 ms
 (8 rows)
 
 COMMIT
 ```
 
-Compare this to a query made by a role with the `bypassrls` attribute, which **will** use the index:
+Compare this to an equivalent query made by a role with the `bypassrls` attribute, which **will** use the index:
 
 ```sql
 postgres=# begin;
@@ -545,31 +512,37 @@ set local "rls.user_id" to 'a74c6f1e-b6ac-4088-b468-6c1987146721';
 
 explain analyze
 select * from users
-  where name ilike '%test'
+  where lower(email) = 'placeholder@email1.com'
   and id in (select get_visible_users_for_auth_user());
 end;
 BEGIN
 SET
-                                                        QUERY PLAN
--------------------------------------------------------------------------------------------------------------------------------
- Hash Semi Join  (cost=29.17..66.51 rows=1 width=61) (actual time=0.249..0.287 rows=0 loops=1)
- Hash Cond: (users.id = (get_visible_users_for_auth_user()))
- ->  Bitmap Heap Scan on users  (cost=28.08..65.39 rows=10 width=61) (actual time=0.044..0.044 rows=0 loops=1)
-       Recheck Cond: ((name)::text ~~* '%test'::text)
-       ->  Bitmap Index Scan on users_name_idx  (cost=0.00..2      -8.07 rows=10 width=0) (actual time=0.043..0.044 rows=0 loops=1)
-             Index Cond: ((name)::text ~~* '%test'::text)
- ->  Hash  (cost=0.72..0.72 rows=30 width=16) (actual time=0.202..0.203 rows=15 loops=1)
-       Buckets: 1024  Batches: 1  Memory Usage: 9kB
-       ->  ProjectSet  (cost=0.00..0.42 rows=30 width=16) (actual time=0.176..0.200 rows=15 loops=1)
-             ->  Result  (cost=0.00..0.01 rows=1 width=0) (actual time=0.001..0.001 rows=1 loops=1)
- Planning Time: 0.231 ms
- Execution Time: 0.305 ms
-(12 rows)
+                                                           QUERY PLAN
+--------------------------------------------------------------------------------------------------------------------------------
+ Nested Loop  (cost=1.22..255.03 rows=1 width=61) (actual time=0.345..0.386 rows=1 loops=1)
+   ->  HashAggregate  (cost=0.79..1.09 rows=30 width=16) (actual time=0.330..0.331 rows=13 loops=1)
+         Group Key: get_visible_users_for_auth_user()
+         Batches: 1  Memory Usage: 24kB
+         ->  ProjectSet  (cost=0.00..0.42 rows=30 width=16) (actual time=0.300..0.326 rows=15 loops=1)
+               ->  Result  (cost=0.00..0.01 rows=1 width=0) (actual time=0.001..0.001 rows=1 loops=1)
+   ->  Memoize  (cost=0.43..8.45 rows=1 width=61) (actual time=0.004..0.004 rows=0 loops=13)
+         Cache Key: (get_visible_users_for_auth_user())
+         Cache Mode: logical
+         Hits: 0  Misses: 13  Evictions: 0  Overflows: 0  Memory Usage: 2kB
+         ->  Index Scan using users_pkey on users  (cost=0.42..8.44 rows=1 width=61) (actual time=0.004..0.004 rows=0 loops=13)
+               Index Cond: (id = (get_visible_users_for_auth_user()))
+               Filter: (lower((email)::text) = 'placeholder@email1.com'::text)
+               Rows Removed by Filter: 1
+ Planning Time: 0.130 ms
+ Execution Time: 0.411 ms
+(16 rows)
 
 COMMIT
 ```
 
 With RLS enabled, the query is unable to use the index since the underlying function for the `ilike` operator is not leakproof.
+
+
 
 To check if a specific operator might fall victim to this issue, you can:
 
@@ -641,9 +614,41 @@ COMMIT
 
 After modifying the function's `leakproof` attribute, the `ilike` comparison is performed first within the query, allowing the index on `users.name` to be used. Modifying the `leakproof` attribute requires superuser access, and can potentially lead to data leakages, so **only do this if you're aware of the potential drawbacks.**
 
+## Be careful when adding multiple policies to the same table {#multiple-policies}
+
+There are two different types of RLS policies:
+1. permissive policies (the default), which are combined using `or`; and
+1. restrictive policies, which are combined using `and`.
+
+It's convenient to add multiple permissive policies which get joined together using `or`. However, `or` conditions are much harder to optimize than `and` conditions—`and` conditions restrict the size of the query output while `or` conditions increase the size of the query output.
+
+Depending on your schema definitions, sometimes there isn't a choice on whether to use an `or` condition to perform RLS policy checks, such as if the policies are checking separate columns. However, if you're using multiple policies to perform checks on the same column, especially if you're using multiple function calls, it's generally cheaper to combine them into a single check:
+
+```sql
+-- Before:
+create policy "Users can CRUD all of their workspaces"
+on workspaces
+using (id in (select get_workspaces_for_auth_user()));
+
+create policy "Users can CRUD globally editable workspaces"
+on workspaces
+using (id in (select get_globally_editable_workspaces()));
+
+-- After:
+create policy "Users can CRUD their own and globally editable workspaces"
+on workspaces
+using (
+  id in (
+    select get_workspaces_for_auth_user()
+    union all
+    select get_globally_editable_workspaces()
+  )
+);
+```
+
 ## Optimizing queries
 
-If you've been looking carefully at the query plans for the `workspace_members` queries, you might notice that they've all being performing sequential scans and scanning the whole table:
+If you've been looking carefully at the query plans for the `workspace_members` queries, you might notice that they've all been performing sequential scans and scanning the whole table:
 
 ```sql
 postgres=# begin;
@@ -703,7 +708,9 @@ COMMIT
 
 You can see that the query made by this role skips the full sequential scan in favor of using the index for a bitmap index scan. There's effectively no difference between the two queries, except one is executed with RLS policies enabled and the other disabled.
 
-Let's take a quick exploration through the Postgres source code to figure out what happens here. Normal conditions in the `where` clause, known as quals, will go through the [`pull_up_sublinks` function](https://github.com/postgres/postgres/blob/8382864eb5c9f9ebe962ac20b3392be5ae304d23/src/backend/optimizer/prep/prepjointree.c#L260-L289). `pull_up_sublinks` rewrites certain subquery expressions (referred to as sublinks) to "pull them up" from `where` conditions to become relations to be `join`ed. In particular, it rewrites certain queries using sublinks to convert them to their equivalent joins:
+Let's take a quick exploration through the Postgres source code to figure out what happens here. Normal conditions in the `where` clause, known as quals, will go through the [`pull_up_sublinks` function](https://github.com/postgres/postgres/blob/8382864eb5c9f9ebe962ac20b3392be5ae304d23/src/backend/optimizer/prep/prepjointree.c#L260-L289).
+
+`pull_up_sublinks` rewrites certain subquery expressions (referred to as sublinks) to "pull them up" from `where` conditions to become relations to be `join`ed. In particular, it rewrites certain queries using sublinks to convert them to their equivalent joins:
 - The [`convert_ANY_sublink_to_join` function](https://github.com/postgres/postgres/blob/8382864eb5c9f9ebe962ac20b3392be5ae304d23/src/backend/optimizer/plan/subselect.c#L1233-L1269) converts the following sublinks to their equivalent joins:
   - `lhs op any (select ...)`
   - `lhs in (select ...)` (This is treated as a variant of the `any` subquery.)
@@ -763,7 +770,7 @@ That's much better! We've managed to convert the sequential scan into the same b
 
 ### Optimizing `exists` subqueries
 
-The other common type of subquery used in RLS policies are `exists` subqueries. Let's modify our schema so that we add an exists subquery. We'll add an RLS policy for `users` so that users can view other users who are in the same workspaces. We're also taking advantage of the fact that `workspace_members` has its own RLS policies applied, so we don't have to add any other filtering clauses for the `workspace_members` subquery:
+The other common type of subquery used in RLS policies are `exists` subqueries. Let's tweak our schema to add an exists subquery in a policy. We'll add an RLS policy for `users` so that users can view other users who are in the same workspaces. We're also taking advantage of the fact that `workspace_members` has its own RLS policies applied, so we don't have to add any other filtering clauses for the `workspace_members` subquery:
 
 ```sql
 postgres=# drop policy "Users have access restricted based on some random policy"
@@ -814,7 +821,7 @@ COMMIT
 
 We're performing a sequential scan on all `users`, then checking each row if there is a matching `workspace_members` row. There doesn't appear to be any easy way to optimize the `exists` subquery here, as there was for the `any` subquery.
 
-However, we can make use of some knowledge of Postgres's handling of RLS policies to help us. Normal quals can be executed before security quals if the normal quals use [non-leakproof operators or functions](#non-leakproof). Since the `exists` subquery in the security qual cannot be further rewritten into a more optimal form to use an index scan, we can attempt to add normal quals which **can** be optimized. The easiest one is just an additional `where` condition with a simple equality comparison:
+However, we can make use of some knowledge of Postgres's handling of RLS policies to help us. Normal quals can be executed before security quals if the normal quals use [non-leakproof operators or functions](#non-leakproof). Since the `exists` subquery in the security qual cannot be further rewritten into a more optimal form to use an index scan, we can attempt to add further normal quals which *can* be optimized. The easiest one is just an additional `where` condition with a simple equality comparison:
 
 ```sql
 postgres=# begin;
@@ -850,7 +857,7 @@ SET
 COMMIT
 ```
 
-When directly comparing the `id` column to a single value, the query planner produces a much faster query plan. It uses an index scan to find the matching row, before checking if that row satisfies the corresponding `workspace_members` row requirement. This is definitely much better than the sequential scan.
+Since we're directly specifying the `id` of the row we want to access, a much faster query plan is produced. An index scan is used first to find the matching row, before checking if that row satisfies the corresponding `workspace_members` row requirement. This avoids the sequential scan since the query planner knows that the `id` column is unique and there can only be a single row which matches a given ID, so an index scan to find a single row would be much faster.
 
 However, if you want to perform a query selecting all the `workspace_members` that satisfy the RLS policy conditions, you can't just provide a single ID for an equality comparison. The somewhat ugly workaround here is to specify the RLS policy condition again, this time as a `where` condition for the query:
 
@@ -964,9 +971,9 @@ COMMIT
 
 This operation is performed with a nested loop, where the outer `workspace_members` table is scanned first using an index scan to get the matching workspace members. For each workspace member, the `users` table is then scanned to get the corresponding user. However, the scan on `users` causes another scan on `workspace_members` due to the RLS policy on `users`.
 
-As more tables are joined in a query, there could be many similar "recursive" checks which slow down the query by an order of magnitude.
+As more tables are joined in a query, there could be many similar "recursive" checks which slow down the query by orders of magnitude.
 
-This can be somewhat mitigated by writing policies which only reference columns of the current table and use security definer functions to bypass RLS if they need to scan other tables. However, it's not always possible to do that depending on the query, and such a workaround still doesn't solve the duplicate data access problem.
+This can be somewhat mitigated by writing policies which only access the current table, and use security definer functions to bypass RLS if they need to scan other tables. However, it's not always possible to do that depending on the query, and such a workaround still doesn't solve the duplicate data access problem.
 
 ## PostgREST-specific: Consider storing data in a separate schema and using views to access data {#postgrest}
 
@@ -1054,4 +1061,4 @@ The following pages were helpful in allowing me to gain a better understanding o
 [^supabase]: [Supabase](https://supabase.com/) is an all-in-one database platform based on Postgres. It integrates native PostgreSQL features like RLS alongside additional tooling like PostgREST and a custom authentication server to create a convenient platform of services for developers.
 [^update]: `update` and `delete` statements are less prone to suffering from similar performance drawbacks, simply because they operate (or should operate!) on rows uniquely identified by their primary keys, which are indexed by default.
 [^foreign-references]: See [this article](https://medium.com/@awesboss/how-to-find-missing-indexes-on-foreign-keys-2faffd7e6958) to find foreign key references which might need indices.
-[^any-optimization]: The `any` subquery which would run as a subplan executing for every row, is [converted into a hashed subplan](https://github.com/postgres/postgres/blob/8382864eb5c9f9ebe962ac20b3392be5ae304d23/src/backend/optimizer/plan/subselect.c#L510-L516). This means the result of the subquery is hashed to avoid having to be executed repeatedly.
+[^any-optimization]: The `any` subquery, which would run as a subplan executing for every row, is [converted into a hashed subplan](https://github.com/postgres/postgres/blob/8382864eb5c9f9ebe962ac20b3392be5ae304d23/src/backend/optimizer/plan/subselect.c#L510-L516). This means the result of the subquery is hashed to avoid having to be executed repeatedly.
