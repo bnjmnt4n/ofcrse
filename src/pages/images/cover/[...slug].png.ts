@@ -52,7 +52,7 @@ async function getImageProperties(slug: string) {
   };
 }
 
-export const get: APIRoute = async ({ params }) => {
+export const GET: APIRoute = async ({ params }) => {
   const imageProperties = await getImageProperties(params.slug!);
 
   const image = await renderPng(
