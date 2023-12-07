@@ -85,6 +85,7 @@ impl_from!(http::Error);
 impl_from!(http::uri::InvalidUri);
 impl_from!(http::uri::InvalidUriParts);
 impl_from!(hyper::Error);
+impl_from!(hyper_util::client::legacy::Error);
 impl_from!(serde_json::Error);
 
 const ERROR_404: &[u8] = include_bytes!("../dist/404.html");

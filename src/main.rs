@@ -1,14 +1,13 @@
-use std::borrow::Cow;
+mod error;
+
 use std::collections::HashMap;
 use std::io::BufReader;
 use std::net::SocketAddr;
 use std::time::Duration;
+use std::{borrow::Cow, convert::Infallible};
 
-mod error;
-
-use crate::error::HttpError;
 use axum::{
-    body::{Body, BoxBody},
+    body::Body,
     extract::{ConnectInfo, FromRef, Host, Path, State},
     http::{header, HeaderValue, Request, StatusCode},
     middleware::{self, Next},
@@ -17,15 +16,22 @@ use axum::{
     Router,
 };
 use color_eyre::Report;
-use hyper::{client::HttpConnector, HeaderMap, Uri};
+use hyper::{body::Incoming, HeaderMap, Uri};
 use hyper_rustls::HttpsConnector;
-use tower::ServiceExt;
+use hyper_util::{
+    client::legacy::connect::HttpConnector,
+    rt::{TokioExecutor, TokioIo},
+};
+use tokio::net::TcpListener;
+use tower::{Service, ServiceExt};
 use tower_http::{
     services::{ServeDir, ServeFile},
     trace::TraceLayer,
 };
-use tracing::{info, Span};
+use tracing::{error, info, Span};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
+
+use crate::error::HttpError;
 
 const DEFAULT_PORT: i32 = 3000;
 const DEFAULT_SITE_URL: &str = "http://localhost:3000";
@@ -109,7 +115,7 @@ async fn main() -> Result<(), color_eyre::Report> {
             tracing::info!("started processing request");
         })
         .on_response(
-            |response: &Response<BoxBody>, latency: Duration, _span: &Span| {
+            |response: &Response<Body>, latency: Duration, _span: &Span| {
                 tracing::info!(
                     latency = format_args!("{} ms", latency.as_millis()),
                     status = %response.status(),
@@ -127,11 +133,38 @@ async fn main() -> Result<(), color_eyre::Report> {
         .fallback(|| async { Err::<(), HttpError>(HttpError::NotFound) })
         .layer(tracing_layer);
 
-    axum::Server::bind(&address)
-        .serve(app.into_make_service_with_connect_info::<SocketAddr>())
-        .await?;
+    // https://github.com/tokio-rs/axum/blob/934b1aac067dba596feb617817409345f9835db5/examples/serve-with-hyper/src/main.rs
 
-    Ok(())
+    let mut make_service = app.into_make_service_with_connect_info::<SocketAddr>();
+    let listener = TcpListener::bind(&address).await?;
+
+    loop {
+        let (socket, remote_addr) = listener.accept().await.unwrap();
+        // We don't need to call `poll_ready` because `IntoMakeServiceWithConnectInfo` is always ready.
+        let tower_service = unwrap_infallible(make_service.call(remote_addr).await);
+
+        tokio::spawn(async move {
+            let socket = TokioIo::new(socket);
+
+            let hyper_service = hyper::service::service_fn(move |request: Request<Incoming>| {
+                tower_service.clone().oneshot(request)
+            });
+
+            if let Err(err) = hyper_util::server::conn::auto::Builder::new(TokioExecutor::new())
+                .serve_connection_with_upgrades(socket, hyper_service)
+                .await
+            {
+                error!("Failed to serve connection: {:#}", err);
+            }
+        });
+    }
+}
+
+fn unwrap_infallible<T>(result: Result<T, Infallible>) -> T {
+    match result {
+        Ok(value) => value,
+        Err(err) => match err {},
+    }
 }
 
 fn get_header<'a>(headers: &'a HeaderMap, header_name: &'static str) -> Option<&'a str> {
@@ -140,7 +173,7 @@ fn get_header<'a>(headers: &'a HeaderMap, header_name: &'static str) -> Option<&
         .and_then(|header_value| header_value.to_str().map_or(None, Some))
 }
 
-type Client = hyper::client::Client<HttpsConnector<HttpConnector>, Body>;
+type Client = hyper_util::client::legacy::Client<HttpsConnector<HttpConnector>, Body>;
 
 fn initialize_app(app: Router, app_state: AppState, path: &str) -> Router {
     let https_connector = hyper_rustls::HttpsConnectorBuilder::new()
@@ -148,7 +181,11 @@ fn initialize_app(app: Router, app_state: AppState, path: &str) -> Router {
         .https_or_http()
         .enable_http1()
         .build();
-    let client = hyper::Client::builder().build(https_connector);
+
+    let client = hyper_util::client::legacy::Client::builder(TokioExecutor::new())
+        .pool_idle_timeout(Duration::from_secs(30))
+        .http2_only(false)
+        .build(https_connector);
 
     let primary_app = primary_router().with_state(PrimaryAppState {
         client,
@@ -201,7 +238,7 @@ const CONTENT_TYPE_WOFF2: &[u8] = b"font/woff2";
 fn primary_router() -> Router<PrimaryAppState> {
     let file_server = ServeDir::new("dist").not_found_service(ServeFile::new("dist/404.html"));
 
-    async fn custom_middleware<B>(mut request: Request<B>, next: Next<B>) -> Response {
+    async fn custom_middleware(mut request: Request<Body>, next: Next) -> Response {
         // Remove trailing slashes.
         let path = request.uri().path();
         if path.ends_with("/") && path != "/" && !path.starts_with("/count") {
@@ -304,7 +341,7 @@ async fn goatcounter_proxy(
         })
         .and_then(|addr| req.headers_mut().insert("X-Real-IP", addr));
 
-    Ok(client.request(req).await?)
+    Ok(client.request(req).await?.into_response())
 }
 
 // Music shortlink.
