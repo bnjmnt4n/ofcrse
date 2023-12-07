@@ -222,7 +222,8 @@ fn primary_router() -> Router<PrimaryAppState> {
             (StatusCode::TEMPORARY_REDIRECT, [(header::LOCATION, uri)]).into_response()
         } else {
             // Assume path is a directory if there is no `.` in the path.
-            if !path.contains(".") {
+            // TODO: `/count` should be excluded from the middleware.
+            if !path.starts_with("/count") && !path.contains(".") {
                 let query = request.uri().query();
 
                 let uri = format!(
