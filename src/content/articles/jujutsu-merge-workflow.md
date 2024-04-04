@@ -2,7 +2,7 @@
 title: A Better Merge Workflow with Jujutsu
 description: A merge workflow for activating multiple branches simultaneously using Jujutsu, an alternative VCS to Git.
 cover:
-  image: /src/assets/images/jujutsu-merge-workflow.jpg
+  image: /assets/images/cover/jujutsu-merge-workflow.jpg
 ---
 
 ## Introduction

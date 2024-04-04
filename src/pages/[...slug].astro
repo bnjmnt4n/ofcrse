@@ -16,11 +16,8 @@ export type Props = CollectionEntry<"articles">;
 
 const post = Astro.props;
 const { headings, Content } = await post.render();
-let ogImage = undefined;
-if (post.data.cover === true || typeof post.data.cover === "object") {
-  ogImage = `/images/cover/${post.slug}.png`;
-}
+const coverImage = post.data.cover?.image;
 ---
-<ArticleLayout {...post.data} slug={post.slug} headings={headings} ogImage={ogImage}>
+<ArticleLayout {...post.data} slug={post.slug} headings={headings} ogImage={coverImage}>
   <Content />
 </ArticleLayout>

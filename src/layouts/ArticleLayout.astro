@@ -15,7 +15,7 @@ export interface Props {
   title: string;
   description: string;
   headings: MarkdownHeading[];
-  ogImage?: string;
+  ogImage?: unknown;
   publishedAt?: Date;
   updatedAt?: Date;
   cover?: {
@@ -33,8 +33,6 @@ const {
   publishedAt,
   updatedAt,
 } = Astro.props;
-const coverImage = Astro.props.cover?.image ?? null;
-const images = import.meta.glob<{ default: ImageMetadata }>("/src/assets/images/*.{jpg,png,gif}");
 ---
 <!doctype html>
 <html lang="en">
@@ -287,9 +285,9 @@ const images = import.meta.glob<{ default: ImageMetadata }>("/src/assets/images/
     </div>
 
     <div class="content">
-      {typeof coverImage === "string" && typeof images[coverImage] === "function" && (
+      {typeof ogImage === "string" && (
         <div class="image-wrapper">
-          <Image src={images[coverImage]()} alt="" />
+          <Image src={ogImage} width={1200} height={600} alt="" />
         </div>
       )}
       <slot />
