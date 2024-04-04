@@ -1,5 +1,6 @@
 ---
-import type { MarkdownHeading } from "astro";
+import type { ImageMetadata, MarkdownHeading } from "astro";
+import { Image } from "astro:assets";
 import "../styles/fonts.css";
 import "../styles/global.css";
 import Date from "../components/Date.astro";
@@ -17,6 +18,10 @@ export interface Props {
   ogImage?: string;
   publishedAt?: Date;
   updatedAt?: Date;
+  cover?: {
+    title?: string;
+    image?: string;
+  };
 }
 
 const {
@@ -28,6 +33,8 @@ const {
   publishedAt,
   updatedAt,
 } = Astro.props;
+const coverImage = Astro.props.cover?.image ?? null;
+const images = import.meta.glob<{ default: ImageMetadata }>("/src/assets/images/*.{jpg,png,gif}");
 ---
 <!doctype html>
 <html lang="en">
@@ -72,6 +79,20 @@ const {
     .sidebar summary {
       font-weight: bold;
       list-style-position: outside;
+    }
+
+    article .content {
+      hyphens: auto;
+    }
+
+    article .content .image-wrapper {
+      margin: 2rem -1.5rem 2rem;
+      padding-left: 0;
+      padding-right: 0;
+    }
+
+    article .content :global(h2) {
+      margin-top: 2rem;
     }
 
     article .content :global(h3) {
@@ -139,19 +160,29 @@ const {
         margin-left: calc(-1 * (var(--sidebar-width) + var(--gap)));
 
         grid-template-columns: var(--sidebar-width) var(--content-width);
+        grid-template-rows: auto auto;
       }
 
       article h1, article .content {
         grid-column: 2 / span 1;
       }
 
-      .sidebar {
+      article .content .image-wrapper {
+        margin-top: 0;
+        margin-left: -24px;
+        margin-right: -24px;
+      }
+
+      .sidebar-wrapper {
         width: var(--sidebar-width);
         height: 100%;
-        align-self: start;
-        max-height: calc(100vh - 24px * 2);
         grid-column: 1 / span 1;
+        grid-row: 2 / span 1;
 
+        border-right: 1px solid #e5e7eb;
+      }
+
+      .sidebar {
         position: sticky;
         top: 24px;
         bottom: 24px;
@@ -160,7 +191,8 @@ const {
         flex-direction: column;
 
         font-size: 0.8rem;
-        border-right: 1px solid #e5e7eb;
+
+        max-height: calc(100vh - 24px * 2);
       }
 
       .toc {
@@ -214,44 +246,52 @@ const {
   <Navigation activePath="/writing" />
   <article>
     <h1>{title}</h1>
-    <aside class="sidebar">
-      <div class="article">
-        <strong>Article</strong>
-        {" "}
-        <a href={`/${slug}`}>{title} 🔗</a>
-      </div>
-      <div class="written-by">
-        <strong>Written by</strong>
-        {" "}
-        <span><a href="https://twitter.com/bnjmnt4n">Benjamin Tan <TwitterIcon /></a></span>
-      </div>
-      {publishedAt ? (
-        <div>
-          <strong>Published on</strong>
+    <div class="sidebar-wrapper">
+      <aside class="sidebar">
+        <div class="article">
+          <strong>Article</strong>
           {" "}
-          <Date date={publishedAt} />
+          <a href={`/${slug}`}>{title} 🔗</a>
         </div>
-      ) : (
-        <div>
-          <strong>Status</strong>
+        <div class="written-by">
+          <strong>Written by</strong>
           {" "}
-          <span>Draft</span>
+          <span><a href="https://twitter.com/bnjmnt4n">Benjamin Tan <TwitterIcon /></a></span>
         </div>
-      )}
-      {updatedAt && (
-        <div>
-          <strong>Updated on</strong>
-          <Date date={updatedAt} />
+        {publishedAt ? (
+          <div>
+            <strong>Published on</strong>
+            {" "}
+            <Date date={publishedAt} />
+          </div>
+        ) : (
+          <div>
+            <strong>Status</strong>
+            {" "}
+            <span>Draft</span>
+          </div>
+        )}
+        {updatedAt && (
+          <div>
+            <strong>Updated on</strong>
+            <Date date={updatedAt} />
+          </div>
+        )}
+        <div class="toc">
+          <details>
+            <summary>Table of contents</summary>
+            <TableOfContents headings={headings} />
+          </details>
         </div>
-      )}
-      <div class="toc">
-        <details>
-          <summary>Table of contents</summary>
-          <TableOfContents headings={headings} />
-        </details>
-      </div>
-    </aside>
+      </aside>
+    </div>
+
     <div class="content">
+      {coverImage && (
+        <div class="image-wrapper">
+          <Image src={images[coverImage]()} alt="" />
+        </div>
+      )}
       <slot />
     </div>
   </article>

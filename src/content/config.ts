@@ -17,6 +17,7 @@ const articles = defineCollection({
         subtitle: z.string().optional(),
         titleFontSize: z.number().optional(),
         subtitleFontSize: z.number().optional(),
+        image: z.string().optional(),
       }))
       .transform((value) => value === undefined ? true : value),
   }),
