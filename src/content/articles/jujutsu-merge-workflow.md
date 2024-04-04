@@ -224,6 +224,28 @@ Parent commit      : [1m[38;5;5morl[0m[38;5;8mlnptq[39m [1m[38;5;4m6e4[0
 [0;1m[32m❯[0m [34mjj[39m [36mcommit[39m [36m-m[39m [33m"new: avoid manual `unwrap()` call"[39m
 Working copy now at: [1m[38;5;13movy[38;5;8mpxnus[39m [38;5;12me0c[38;5;8m160c9[39m [38;5;10m(empty)[39m [38;5;10m(no description set)[0m
 Parent commit      : [1m[38;5;5mrwq[0m[38;5;8mywnzl[39m [1m[38;5;4m919[0m[38;5;8mfae76[39m new: avoid manual `unwrap()` call
+
+[0;1m[32m❯[0m [34mjj[39m [36mshow[39m [36mrwq[39m
+Commit ID: [38;5;4m919fae76dccba57d1df3df3125f4d4eac6676ce9[39m
+Change ID: [38;5;5mrwqywnzlzmnoqrqkosupxwtyrxumymxs[39m
+Author: Benjamin Tan <[38;5;3mbenjamin@dev.ofcr.se[39m> ([38;5;6m23 hours ago[39m)
+Committer: Benjamin Tan <[38;5;3mbenjamin@dev.ofcr.se[39m> ([38;5;6m23 hours ago[39m)
+
+    new: avoid manual `unwrap()` call
+
+[1mdiff --git a/cli/src/commands/new.rs b/cli/src/commands/new.rs[0m
+[1mindex eeeb50aee6...e0defba129 100644[0m
+[1m--- a/cli/src/commands/new.rs[0m
+[1m+++ b/cli/src/commands/new.rs[0m
+[38;5;6m@@ -193,7 +193,7 @@[39m
+             writeln!(formatter)?;
+         }
+     } else {
+[38;5;1m-        tx.edit(&new_commit).unwrap();[39m
+[38;5;2m+        tx.edit(&new_commit)?;[39m
+         // The description of the new commit will be printed by tx.finish()
+     }
+     if num_rebased > 0 {
 ```
 
 Here's the updated commit graph, with the new commit (change ID `rwq`) as a child of the merge commit:
@@ -265,7 +287,7 @@ Added 0 files, modified 1 files, removed 0 files
 
 The `-r` option rebases only the given revision on top of the destination; it rebases all of its descendants on top of its parents. Effectively, this is similar to moving a commit to another location in the graph.
 
-After rebasing onto `main`, you can then add `rws` as a new parent of the merge commit to keep the change applied to your working directory:
+After rebasing onto `main`, you can then add `rwq` as a new parent of the merge commit to keep the change applied to your working directory:
 
 ```ansi
 [0;1m[32m❯[0m [34mjj[39m [36mrebase[39m [36m-s[39m [36morl[39m [36m-d[39m [33m"all:orl-"[39m [36m-d[39m [36mrwq[39m
@@ -479,13 +501,275 @@ This has the effect of removing `qkl` from the merge commit:
 ~
 ```
 
+## Conflicting changes
+
+What happens if you update something in the working directory, which you want to shift to a specific parent of the merge commit, but it actually conflicts with another change you made in another parent?
+
+Here, I've committed a change which modifies the same lines as the previous commit `rwq`:
+
+```ansi
+[0;1m[32m❯[0m [34mjj[39m [36mcommit[39m [36m-m[39m [33m"conflicting change"[39m
+Working copy now at: [1m[38;5;13mywr[38;5;8myozyt[39m [38;5;12m7fd[38;5;8m247f5[39m [38;5;10m(empty)[39m [38;5;10m(no description set)[0m
+Parent commit      : [1m[38;5;5muyl[0m[38;5;8mlouwm[39m [1m[38;5;4m128[0m[38;5;8md5444[39m conflicting change
+
+[0;1m[32m❯[0m [34mjj[39m [36mshow[39m [36muyl[39m
+Commit ID: [38;5;4me8cc1f87020ecfabc4fa4b44a6a8a8d67a5de23c[39m
+Change ID: [38;5;5muyllouwmkkkkrkvtzynuqwuqvxsrmpvx[39m
+Author: Benjamin Tan <[38;5;3mbenjamin@dev.ofcr.se[39m> ([38;5;6m21 hours ago[39m)
+Committer: Benjamin Tan <[38;5;3mbenjamin@dev.ofcr.se[39m> ([38;5;6m20 minutes ago[39m)
+
+[38;5;3m    (no description set)[39m
+
+[1mdiff --git a/cli/src/commands/new.rs b/cli/src/commands/new.rs[0m
+[1mindex e0defba129...b946b93769 100644[0m
+[1m--- a/cli/src/commands/new.rs[0m
+[1m+++ b/cli/src/commands/new.rs[0m
+[38;5;6m@@ -193,7 +193,8 @@[39m
+             writeln!(formatter)?;
+         }
+     } else {
+[38;5;1m-        tx.edit(&new_commit)?;[39m
+[38;5;2m+        let commit = new_commit;[39m
+[38;5;2m+        tx.edit(&commit).unwrap();[39m
+         // The description of the new commit will be printed by tx.finish()
+     }
+     if num_rebased > 0 {
+```
+
+Here's the updated commit graph now, with `uyl` containing the change and no longer being empty:
+
+```ansi
+[0;1m[32m❯[0m [34mjj[39m [36mlog[39m
+@  [1m[38;5;13mywr[38;5;8myozyt[39m [38;5;3mbenjamin@dev.ofcr.se[39m [38;5;14m35 seconds ago[39m [38;5;12m7fd[38;5;8m247f5[39m[0m
+│  [1m[38;5;10m(empty)[39m [38;5;10m(no description set)[39m[0m
+◉  [1m[38;5;5muyl[0m[38;5;8mlouwm[39m [38;5;3mbenjamin@dev.ofcr.se[39m [38;5;6m35 seconds ago[39m [38;5;2mHEAD@git[39m [1m[38;5;4m128[0m[38;5;8md5444[39m
+│  conflicting change
+◉      [1m[38;5;5morl[0m[38;5;8mlnptq[39m [38;5;3mbenjamin@dev.ofcr.se[39m [38;5;6m21 hours ago[39m [1m[38;5;4m090[0m[38;5;8mffb0d[39m
+├─┬─╮  [38;5;2m(empty)[39m [38;5;2m(no description set)[39m
+│ │ ◉  [1m[38;5;5mzoz[0m[38;5;8mvwmow[39m [38;5;3mbenjamin@dev.ofcr.se[39m [38;5;6m23 hours ago[39m [38;5;5mssh-openssh*[39m [1m[38;5;4mc6c[0m[38;5;8m73906[39m
+│ │ │  git: update error message for SSH error to stop referencing libssh2
+│ │ ◉  [1m[38;5;5myow[0m[38;5;8mkkkqn[39m [38;5;3mbenjamin@dev.ofcr.se[39m [38;5;6m23 hours ago[39m [1m[38;5;4mffe[0m[38;5;8mc92c9[39m
+│ │ │  git: use prerelease version of `git2` with OpenSSH support
+│ ◉ │  [1m[38;5;5mwtm[0m[38;5;8mqulxn[39m [38;5;3mbenjamin@dev.ofcr.se[39m [38;5;6m23 hours ago[39m [38;5;5mpush-uqxvnturzsuu*[39m [1m[38;5;4m867[0m[38;5;8m3733e[39m
+│ │ │  rebase: allow both `--insert-after` and `--insert-before` to be used simultaneously
+│ ◉ │  [1m[38;5;5muqx[0m[38;5;8mvntur[39m [38;5;3mbenjamin@dev.ofcr.se[39m [38;5;6m23 hours ago[39m [1m[38;5;4mdd7[0m[38;5;8m454a2[39m
+│ │ │  rebase: add `--insert-after` and `--insert-before` options
+│ ◉ │  [1m[38;5;5mnkzsq[0m[38;5;8mppm[39m [38;5;3mbenjamin@dev.ofcr.se[39m [38;5;6m23 hours ago[39m [1m[38;5;4m0a94[0m[38;5;8m9714[39m
+│ ├─╯  rebase: extract out some functions from `rebase_revision`
+◉ │  [1m[38;5;5mlqks[0m[38;5;8mrtkk[39m [38;5;3mbenjamin@dev.ofcr.se[39m [38;5;6m21 hours ago[39m [38;5;5mtest*[39m [1m[38;5;4m07d[0m[38;5;8m8a576[39m
+│ │  misc: test change
+◉ │  [1m[38;5;5mrwq[0m[38;5;8mywnzl[39m [38;5;3mbenjamin@dev.ofcr.se[39m [38;5;6m23 hours ago[39m [38;5;5mtest@bnjmnt4n[39m [1m[38;5;4m402[0m[38;5;8mf7ad8[39m
+├─╯  new: avoid manual `unwrap()` call
+◉  [1m[38;5;5moqtz[0m[38;5;8mskyx[39m [38;5;3mmartinvonz@google.com[39m [38;5;6m2 days ago[39m [38;5;5mmain*[39m [38;5;5mv0.16.0[39m [1m[38;5;4m2dcd[0m[38;5;8mc7fb[39m
+│  release: release version 0.16.0
+~
+```
+
+I now want to shift this new commit into the arm of the merge commit with `zoz` (the `ssh-openssh` branch), so I create a new, empty commit after `zoz`:
+
+```ansi
+[0;1m[32m❯[0m [34mjj[39m [36mnew[39m [36m--after[39m [36mzoz[39m [36m--no-edit[39m
+Created new commit [1m[38;5;5mtxs[0m[38;5;8mrozwq[39m [1m[38;5;4mae4f[0m[38;5;8mdff5[39m [38;5;2m(empty)[39m [38;5;2m(no description set)[39m
+Rebased 5 descendant commits
+Working copy now at: [1m[38;5;13mywr[38;5;8myozyt[39m [38;5;12me1f[38;5;8ma0851[39m [38;5;10m(empty)[39m [38;5;10m(no description set)[0m
+Parent commit      : [1m[38;5;5muyl[0m[38;5;8mlouwm[39m [1m[38;5;4m454[0m[38;5;8mcaf02[39m conflicting change
+
+[0;1m[32m❯[0m [34mjj[39m [36mlog[39m
+@  [1m[38;5;13mywr[38;5;8myozyt[39m [38;5;3mbenjamin@dev.ofcr.se[39m [38;5;14m5 seconds ago[39m [38;5;12me1f[38;5;8ma0851[39m[0m
+│  [1m[38;5;10m(empty)[39m [38;5;10m(no description set)[39m[0m
+◉  [1m[38;5;5muyl[0m[38;5;8mlouwm[39m [38;5;3mbenjamin@dev.ofcr.se[39m [38;5;6m6 seconds ago[39m [38;5;2mHEAD@git[39m [1m[38;5;4m454[0m[38;5;8mcaf02[39m
+│  conflicting change
+◉      [1m[38;5;5morl[0m[38;5;8mlnptq[39m [38;5;3mbenjamin@dev.ofcr.se[39m [38;5;6m6 seconds ago[39m [1m[38;5;4mfabc[0m[38;5;8mecf1[39m
+├─┬─╮  [38;5;2m(empty)[39m [38;5;2m(no description set)[39m
+│ │ ◉  [1m[38;5;5mtxs[0m[38;5;8mrozwq[39m [38;5;3mbenjamin@dev.ofcr.se[39m [38;5;6m6 seconds ago[39m [1m[38;5;4mae4[0m[38;5;8mfdff5[39m
+│ │ │  [38;5;2m(empty)[39m [38;5;2m(no description set)[39m
+│ │ ◉  [1m[38;5;5mzoz[0m[38;5;8mvwmow[39m [38;5;3mbenjamin@dev.ofcr.se[39m [38;5;6m23 hours ago[39m [38;5;5mssh-openssh*[39m [1m[38;5;4mc6c[0m[38;5;8m73906[39m
+│ │ │  git: update error message for SSH error to stop referencing libssh2
+│ │ ◉  [1m[38;5;5myow[0m[38;5;8mkkkqn[39m [38;5;3mbenjamin@dev.ofcr.se[39m [38;5;6m23 hours ago[39m [1m[38;5;4mffe[0m[38;5;8mc92c9[39m
+│ │ │  git: use prerelease version of `git2` with OpenSSH support
+│ ◉ │  [1m[38;5;5mwtm[0m[38;5;8mqulxn[39m [38;5;3mbenjamin@dev.ofcr.se[39m [38;5;6m23 hours ago[39m [38;5;5mpush-uqxvnturzsuu*[39m [1m[38;5;4m867[0m[38;5;8m3733e[39m
+│ │ │  rebase: allow both `--insert-after` and `--insert-before` to be used simultaneously
+│ ◉ │  [1m[38;5;5muqx[0m[38;5;8mvntur[39m [38;5;3mbenjamin@dev.ofcr.se[39m [38;5;6m23 hours ago[39m [1m[38;5;4mdd7[0m[38;5;8m454a2[39m
+│ │ │  rebase: add `--insert-after` and `--insert-before` options
+│ ◉ │  [1m[38;5;5mnkzsq[0m[38;5;8mppm[39m [38;5;3mbenjamin@dev.ofcr.se[39m [38;5;6m23 hours ago[39m [1m[38;5;4m0a94[0m[38;5;8m9714[39m
+│ ├─╯  rebase: extract out some functions from `rebase_revision`
+◉ │  [1m[38;5;5mlqks[0m[38;5;8mrtkk[39m [38;5;3mbenjamin@dev.ofcr.se[39m [38;5;6m21 hours ago[39m [38;5;5mtest*[39m [1m[38;5;4m07d[0m[38;5;8m8a576[39m
+│ │  misc: test change
+◉ │  [1m[38;5;5mrwq[0m[38;5;8mywnzl[39m [38;5;3mbenjamin@dev.ofcr.se[39m [38;5;6m23 hours ago[39m [38;5;5mtest@bnjmnt4n[39m [1m[38;5;4m402[0m[38;5;8mf7ad8[39m
+├─╯  new: avoid manual `unwrap()` call
+◉  [1m[38;5;5moqtz[0m[38;5;8mskyx[39m [38;5;3mmartinvonz@google.com[39m [38;5;6m2 days ago[39m [38;5;5mmain*[39m [38;5;5mv0.16.0[39m [1m[38;5;4m2dcd[0m[38;5;8mc7fb[39m
+│  release: release version 0.16.0
+~
+```
+
+The new commit has the change ID `txs`, so I'll squash my changes from `uyl` into `txs`:
+
+```ansi
+[0;1m[32m❯[0m [34mjj[39m [36msquash[39m [36m--from[39m [36muyl[39m [36m--into[39m [36mtxs[39m
+Rebased 4 descendant commits
+New conflicts appeared in these commits:
+  [1m[38;5;5mtxs[0m[38;5;8mrozwq[39m [1m[38;5;4m0bb[0m[38;5;8mdad29[39m [38;5;1m(conflict)[39m conflicting change
+[39mTo resolve the conflicts, start by updating to it:[39m
+[39m  jj new txsrozwqlunv[39m
+[39mThen use `jj resolve`, or edit the conflict markers in the file directly.[39m
+[39mOnce the conflicts are resolved, you may want inspect the result with `jj diff`.[39m
+[39mThen run `jj squash` to move the resolution into the conflicted commit.[39m
+Working copy now at: [1m[38;5;13mywr[38;5;8myozyt[39m [38;5;12m631[38;5;8mfda4b[39m [38;5;10m(empty)[39m [38;5;10m(no description set)[0m
+Parent commit      : [1m[38;5;5morl[0m[38;5;8mlnptq[39m [1m[38;5;4m065[0m[38;5;8m31057[39m [38;5;2m(empty)[39m [38;5;2m(no description set)[39m
+```
+
+Jujutsu now warns that a new conflict appeared in `txs`, as expected. That's because `txs` doesn't have `rwq` in its history, which was where the first modification came from. Let's take a look at the log now:
+
+```ansi
+[0;1m[32m❯[0m [34mjj[39m [36mlog[39m
+@  [1m[38;5;13mywr[38;5;8myozyt[39m [38;5;3mbenjamin@dev.ofcr.se[39m [38;5;14m5 seconds ago[39m [38;5;12m631[38;5;8mfda4b[39m[0m
+│  [1m[38;5;10m(empty)[39m [38;5;10m(no description set)[39m[0m
+◉      [1m[38;5;5morl[0m[38;5;8mlnptq[39m [38;5;3mbenjamin@dev.ofcr.se[39m [38;5;6m5 seconds ago[39m [38;5;2mHEAD@git[39m [1m[38;5;4m065[0m[38;5;8m31057[39m
+├─┬─╮  [38;5;2m(empty)[39m [38;5;2m(no description set)[39m
+│ │ ◉  [1m[38;5;5mtxs[0m[38;5;8mrozwq[39m [38;5;3mbenjamin@dev.ofcr.se[39m [38;5;6m5 seconds ago[39m [1m[38;5;4m0bb[0m[38;5;8mdad29[39m [38;5;1mconflict[39m
+│ │ │  conflicting change
+│ │ ◉  [1m[38;5;5mzoz[0m[38;5;8mvwmow[39m [38;5;3mbenjamin@dev.ofcr.se[39m [38;5;6m23 hours ago[39m [38;5;5mssh-openssh*[39m [1m[38;5;4mc6c[0m[38;5;8m73906[39m
+│ │ │  git: update error message for SSH error to stop referencing libssh2
+│ │ ◉  [1m[38;5;5myow[0m[38;5;8mkkkqn[39m [38;5;3mbenjamin@dev.ofcr.se[39m [38;5;6m23 hours ago[39m [1m[38;5;4mffe[0m[38;5;8mc92c9[39m
+│ │ │  git: use prerelease version of `git2` with OpenSSH support
+│ ◉ │  [1m[38;5;5mwtm[0m[38;5;8mqulxn[39m [38;5;3mbenjamin@dev.ofcr.se[39m [38;5;6m23 hours ago[39m [38;5;5mpush-uqxvnturzsuu*[39m [1m[38;5;4m867[0m[38;5;8m3733e[39m
+│ │ │  rebase: allow both `--insert-after` and `--insert-before` to be used simultaneously
+│ ◉ │  [1m[38;5;5muqx[0m[38;5;8mvntur[39m [38;5;3mbenjamin@dev.ofcr.se[39m [38;5;6m23 hours ago[39m [1m[38;5;4mdd7[0m[38;5;8m454a2[39m
+│ │ │  rebase: add `--insert-after` and `--insert-before` options
+│ ◉ │  [1m[38;5;5mnkzsq[0m[38;5;8mppm[39m [38;5;3mbenjamin@dev.ofcr.se[39m [38;5;6m23 hours ago[39m [1m[38;5;4m0a94[0m[38;5;8m9714[39m
+│ ├─╯  rebase: extract out some functions from `rebase_revision`
+◉ │  [1m[38;5;5mlqks[0m[38;5;8mrtkk[39m [38;5;3mbenjamin@dev.ofcr.se[39m [38;5;6m21 hours ago[39m [38;5;5mtest*[39m [1m[38;5;4m07d[0m[38;5;8m8a576[39m
+│ │  misc: test change
+◉ │  [1m[38;5;5mrwq[0m[38;5;8mywnzl[39m [38;5;3mbenjamin@dev.ofcr.se[39m [38;5;6m23 hours ago[39m [38;5;5mtest@bnjmnt4n[39m [1m[38;5;4m402[0m[38;5;8mf7ad8[39m
+├─╯  new: avoid manual `unwrap()` call
+◉  [1m[38;5;5moqtz[0m[38;5;8mskyx[39m [38;5;3mmartinvonz@google.com[39m [38;5;6m2 days ago[39m [38;5;5mmain*[39m [38;5;5mv0.16.0[39m [1m[38;5;4m2dcd[0m[38;5;8mc7fb[39m
+│  release: release version 0.16.0
+~
+```
+
+The commit `txs` is marked in the log as containing a conflict. Here's what `txs` looks like:
+
+```ansi
+[0;1m[32m❯[0m [34mjj[39m [36mshow[39m [36mtxs[39m
+Commit ID: [38;5;4m0bbdad290b695b94aab4e973349e1a5dda6ef0ce[39m
+Change ID: [38;5;5mtxsrozwqlunvppzymmtrnvotvtrnuwxr[39m
+Author: Benjamin Tan <[38;5;3mbenjamin@dev.ofcr.se[39m> ([38;5;6m14 minutes ago[39m)
+Committer: Benjamin Tan <[38;5;3mbenjamin@dev.ofcr.se[39m> ([38;5;6m13 minutes ago[39m)
+
+    conflicting change
+
+[1mdiff --git a/cli/src/commands/new.rs b/cli/src/commands/new.rs[0m
+[1mindex eeeb50aee6...0000000000 100644[0m
+[1m--- a/cli/src/commands/new.rs[0m
+[1m+++ b/cli/src/commands/new.rs[0m
+[38;5;6m@@ -193,7 +193,14 @@[39m
+             writeln!(formatter)?;
+         }
+     } else {
+[38;5;1m-        tx.edit(&new_commit).unwrap();[39m
+[38;5;2m+<<<<<<<[39m
+[38;5;2m+%%%%%%%[39m
+[38;5;2m+-        tx.edit(&new_commit)?;[39m
+[38;5;2m++        tx.edit(&new_commit).unwrap();[39m
+[38;5;2m++++++++[39m
+[38;5;2m+        let commit = new_commit;[39m
+[38;5;2m+        tx.edit(&commit).unwrap();[39m
+[38;5;2m+>>>>>>>[39m
+         // The description of the new commit will be printed by tx.finish()
+     }
+     if num_rebased > 0 {
+```
+
+The original line from `txs`'s parent commit in red is replaced with the new conflicting changes in green. Jujutsu's [conflict markers][jj-conflict-markers] are slightly different from Git: lines following `%%%%%%%` are a diff between 2 sides, whilst lines following `+++++++` are a snapshot of the changes a side. Here's my annotations on what the conflict markers mean:
+
+```
+<<<<<<<
+%%%%%%% Diff from destination `txs` to base tree of `orl`
+-        tx.edit(&new_commit)?;
++        tx.edit(&new_commit).unwrap();
++++++++ Snapshot of new changes from source `uyl`
+        let commit = new_commit;
+        tx.edit(&commit).unwrap();
+>>>>>>>
+```
+
+Even though `txs` has a conflict, note that the merge commit `orl` isn't in a conflicted state. This is because Jujutsu doesn't just store conflict markers, but the full metadata of the conflicts, so it can resolve the conflicts by applying all the changes from each of `orl`'s parents.
+
+However, if we want to update the `ssh-openssh` branch to include the changes in `txs`, we can't just push a conflicted file since it won't be accepted in any code review. We need to first resolve the conflict in `txs`. I'm doing this manually here by checking out `txs` and editing the file in the working directory, but you can also use a graphical tool for conflict resolution.
+
+```ansi
+[0;1m[32m❯[0m [34mjj[39m [36mnew[39m [36mtxs[39m
+Working copy now at: [1m[38;5;13mysw[38;5;8mompum[39m [38;5;12m3ea[38;5;8m0e8e9[39m [38;5;9m(conflict)[39m [38;5;10m(empty)[39m [38;5;10m(no description set)[0m
+Parent commit      : [1m[38;5;5mtxs[0m[38;5;8mrozwq[39m [1m[38;5;4m0bb[0m[38;5;8mdad29[39m [38;5;1m(conflict)[39m conflicting change
+Added 0 files, modified 5 files, removed 0 files
+There are unresolved conflicts at these paths:
+cli/src/commands/new.rs    [38;5;3m2-sided conflict[39m
+
+[0;1m[32m❯[0m [34mnvim[39m
+
+[0;1m[32m❯[0m [34mjj[39m [36mstatus[39m
+Working copy changes:
+[38;5;6mM cli/src/commands/new.rs[39m
+Working copy : [1m[38;5;13mysw[38;5;8mompum[39m [38;5;12m509[38;5;8mf7ea1[39m [38;5;3m(no description set)[0m
+Parent commit: [1m[38;5;5mtxs[0m[38;5;8mrozwq[39m [1m[38;5;4m0bb[0m[38;5;8mdad29[39m [38;5;1m(conflict)[39m conflicting change
+```
+
+The changes are updated in my working copy commit, so I can squash the changes into `txs` to apply the resolution there as well:
+
+```ansi
+[0;1m[32m❯[0m [34mjj[39m [36msquash[39m
+Rebased 3 descendant commits
+Existing conflicts were resolved or abandoned from these commits:
+  [1m[39mtxs[0m[38;5;8mrozwq[39m hidden [1m[38;5;4m0bbd[0m[38;5;8mad29[39m [38;5;1m(conflict)[39m conflicting change
+Working copy now at: [1m[38;5;13mxmy[38;5;8mnmysw[39m [38;5;12m53a[38;5;8m37139[39m [38;5;10m(empty)[39m [38;5;10m(no description set)[0m
+Parent commit      : [1m[38;5;5mtxs[0m[38;5;8mrozwq[39m [1m[38;5;4ma11[0m[38;5;8m303a3[39m conflicting change
+```
+
+So, `txs` no longer has any conflicts, and we can update our branch to point to it and push it for review. However, if we go back to our merge commit `orl`, we can see that the merge commit is now marked as conflicting:
+
+```ansi
+[0;1m[32m❯[0m [34mjj[39m [36mnew[39m [36morl[39m
+Working copy now at: [1m[38;5;13mnlw[38;5;8mnwups[39m [38;5;12m69a[38;5;8m1f4ce[39m [38;5;9m(conflict)[39m [38;5;10m(empty)[39m [38;5;10m(no description set)[0m
+Parent commit      : [1m[38;5;5morl[0m[38;5;8mlnptq[39m [1m[38;5;4m919[0m[38;5;8m2cf35[39m [38;5;1m(conflict)[39m [38;5;2m(empty)[39m [38;5;2m(no description set)[39m
+Added 0 files, modified 5 files, removed 0 files
+There are unresolved conflicts at these paths:
+cli/src/commands/new.rs    [38;5;3m2-sided conflict[39m
+
+[0;1m[32m❯[0m [34mjj[39m [36mlog[39m
+@  [1m[38;5;13mnlw[38;5;8mnwups[39m [38;5;3mbenjamin@dev.ofcr.se[39m [38;5;14m1 minute ago[39m [38;5;12m69a[38;5;8m1f4ce[39m [38;5;9mconflict[39m[0m
+│  [1m[38;5;10m(empty)[39m [38;5;10m(no description set)[39m[0m
+◉      [1m[38;5;5morl[0m[38;5;8mlnptq[39m [38;5;3mbenjamin@dev.ofcr.se[39m [38;5;6m5 minutes ago[39m [38;5;2mHEAD@git[39m [1m[38;5;4m919[0m[38;5;8m2cf35[39m [38;5;1mconflict[39m
+├─┬─╮  [38;5;2m(empty)[39m [38;5;2m(no description set)[39m
+│ │ ◉  [1m[38;5;5mtxs[0m[38;5;8mrozwq[39m [38;5;3mbenjamin@dev.ofcr.se[39m [38;5;6m5 minutes ago[39m [1m[38;5;4ma11[0m[38;5;8m303a3[39m
+│ │ │  conflicting change
+│ │ ◉  [1m[38;5;5mzoz[0m[38;5;8mvwmow[39m [38;5;3mbenjamin@dev.ofcr.se[39m [38;5;6m1 day ago[39m [38;5;5mssh-openssh*[39m [1m[38;5;4mc6c[0m[38;5;8m73906[39m
+│ │ │  git: update error message for SSH error to stop referencing libssh2
+│ │ ◉  [1m[38;5;5myow[0m[38;5;8mkkkqn[39m [38;5;3mbenjamin@dev.ofcr.se[39m [38;5;6m1 day ago[39m [1m[38;5;4mffe[0m[38;5;8mc92c9[39m
+│ │ │  git: use prerelease version of `git2` with OpenSSH support
+│ ◉ │  [1m[38;5;5mwtm[0m[38;5;8mqulxn[39m [38;5;3mbenjamin@dev.ofcr.se[39m [38;5;6m1 day ago[39m [38;5;5mpush-uqxvnturzsuu*[39m [1m[38;5;4m867[0m[38;5;8m3733e[39m
+│ │ │  rebase: allow both `--insert-after` and `--insert-before` to be used simultaneously
+│ ◉ │  [1m[38;5;5muqx[0m[38;5;8mvntur[39m [38;5;3mbenjamin@dev.ofcr.se[39m [38;5;6m1 day ago[39m [1m[38;5;4mdd7[0m[38;5;8m454a2[39m
+│ │ │  rebase: add `--insert-after` and `--insert-before` options
+│ ◉ │  [1m[38;5;5mnkzsq[0m[38;5;8mppm[39m [38;5;3mbenjamin@dev.ofcr.se[39m [38;5;6m1 day ago[39m [1m[38;5;4m0a94[0m[38;5;8m9714[39m
+│ ├─╯  rebase: extract out some functions from `rebase_revision`
+◉ │  [1m[38;5;5mlqks[0m[38;5;8mrtkk[39m [38;5;3mbenjamin@dev.ofcr.se[39m [38;5;6m23 hours ago[39m [38;5;5mtest*[39m [1m[38;5;4m07d[0m[38;5;8m8a576[39m
+│ │  misc: test change
+◉ │  [1m[38;5;5mrwq[0m[38;5;8mywnzl[39m [38;5;3mbenjamin@dev.ofcr.se[39m [38;5;6m1 day ago[39m [38;5;5mtest@bnjmnt4n[39m [1m[38;5;4m402[0m[38;5;8mf7ad8[39m
+├─╯  new: avoid manual `unwrap()` call
+◉  [1m[38;5;5moqtz[0m[38;5;8mskyx[39m [38;5;3mmartinvonz@google.com[39m [38;5;6m2 days ago[39m [38;5;5mmain*[39m [38;5;5mv0.16.0[39m [1m[38;5;4m2dcd[0m[38;5;8mc7fb[39m
+│  release: release version 0.16.0
+~
+```
+
+This makes sense, because we've removed manually resolved the conflicts from `txs`. Jujutsu no longer has the metadata about how the conflict came about from merging different files, so `orl` now has the conflict. Typically, this isn't that big an issue since you can just delay conflict resolution for that individual commit until you're done working on that branch. You can then remove that branch from the merge commit after that.
+
 ## Conclusion
 
-I've now shown the various ways you can use Jujutsu to manipulate merge commits, by adding and removing parents using the `jj rebase` command.
+I've shown how you can use Jujutsu to manipulate merge commits and work on separate logical branches of code, by adding and removing parents using the `jj rebase` command.
 
-Working on multiple separate branches of code at the same time can be really powerful. Personally, I use this workflow all the time to avoid having to switch branches. This is especially convenient when working on small bugfixes where it's definitely easier to just work in the current directory.
+Working on multiple branches of code at the same time can be really powerful. Personally, I use this workflow all the time to avoid having to switch branches. This is especially convenient when working on small bugfixes where it's definitely easier to just work in the current directory.
 
-Merging multiple branches together also allows you to very simply test out various features at the same time, without having to wait for all of them to be merged into the main branch. In fact, I use this to build a custom `jj` binary which contain various features that are still in development, but are functional.
+Merging multiple branches together also allows you to very simply test out various features at the same time, without having to wait for all of them to be merged into the main branch. In fact, I use this to build a custom `jj` binary which contains various features which haven't been merged into the trunk.
 
 Even if you aren't convinced about switching to Jujutsu, I think this workflow is still valuable. In fact, a new Git client [GitButler][gitbutler] was recently launched with a similar end product: making it easy to activate different "virtual branches" in your working directory. Otherwise, alternative tools like [git-branchless][git-branchless] might allow you to do something similar.
 
@@ -504,8 +788,9 @@ If you are intrigued by Jujutsu, do check out the [introduction][jj-intro] and [
 [jj-conflicts]: https://martinvonz.github.io/jj/latest/conflicts/
 [jj-undo]: https://martinvonz.github.io/jj/latest/operation-log/
 [jj-rebase-move-commits]: https://github.com/martinvonz/jj/issues/1188
+[jj-conflict-markers]: https://martinvonz.github.io/jj/latest/conflicts/#conflict-markers
 [gitbutler]: https://gitbutler.com/
 [git-branchless]: https://github.com/arxanas/git-branchless
 [jj-intro]: https://github.com/martinvonz/jj#introduction
-[jj-tutorial]: https://martinvonz.github.io/jj/v0.16.0/tutorial/
+[jj-tutorial]: https://martinvonz.github.io/jj/latest/tutorial/
 [chris-krycho-video-series]: https://www.youtube.com/playlist?list=PLelyiwKWHHAq01Pvmpf6x7J0y-yQpmtxp
