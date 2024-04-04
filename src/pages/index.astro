@@ -77,19 +77,14 @@ const articles = await getArticles();
     font-size: 0.9rem;
   }
 
-  section header {
-    display: flex;
-    gap: 12px;
-    align-items: end;
-  }
-
   section header h3 {
     margin-top: 0;
   }
 
-  section header :global(time) {
+  section :global(time) {
     font-family: var(--font-sans-serif);
     font-size: 0.8rem;
+    padding-right: 0.5rem;
     color: var(--color-fg-secondary);
   }
 
@@ -113,16 +108,16 @@ const articles = await getArticles();
     </ul>
   </nav>
 
-  <!--
   <h2>Writing</h2>
   {articles.map((article) => (
     <section>
       <header>
         <h3><a href={`${article.slug}`}>{article.data.title}</a></h3>
-        <Date date={article.data.publishedAt!} />
       </header>
-      <p>{article.data.description}</p>
+      <p>
+        <Date date={article.data.publishedAt!} />
+        {article.data.description}
+      </p>
     </section>
   ))}
-  -->
 </DefaultLayout>
