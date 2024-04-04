@@ -9,7 +9,7 @@ cover:
 
 Since reading [Chris Krycho's essay introduction to Jujutsu][chris-krycho-jj-init], I've been excited about the possibilities of a more modern, user-friendly Version Control System (VCS) tool. For those of you who aren't familiar, [Jujutsu][jj] (binary name: `jj`) is a new VCS which is compatible with existing Git repositories. I've been using Jujutsu as my daily Git driver for a while now. Though it's still experimental software—with its fair share of bugs and unimplemented features, it has made my day-to-day interactions with Git repositories a much more pleasant experience.
 
-There's a really cool workflow that [Austin Seipp][aseipp] shared on Jujutsu's Discord, which I'm beginning to use everywhere, that I thought was worth writing more about. He calls it *The Austin™ Mega Merge Strategy<sup>®</sup>*, but me—I'm just going to call it for what it is: a Better Workflow for Manipulating Merge Commits in Jujutsu[^1].
+There's a really cool workflow that [Austin Seipp][aseipp] shared on Jujutsu's Discord, which I'm beginning to use everywhere, that I thought was worth writing more about. He calls it *The Austin™ Mega Merge Strategy<sup>®</sup>*, but me—I'm just going to call it for what it is: a Better Workflow for Manipulating Merge Commits in Jujutsu[^1]. This workflow makes it easy to simultaneously activate multiple branches in the same working directory.
 
 Before I go through the workflow, let's take a look at some of the basics of Jujutsu.
 
@@ -51,13 +51,17 @@ There's a couple of things to note, which differ from Git:
 
    Change IDs address one of the pain points of Git: what we call "amending a commit" actually creates a brand new commit object with a different ID. After amending a commit, you'd need to check the status message or go back to the commit log to get the new commit ID to address the commit again.
 
-   Using Jujutsu, "amending a commit" also produces a new commit object, as in Git, but the new commit has the same change ID as the original. This means you always have a constant ID to represent the same change, no matter how much you amend the commit history. This is really useful if you're doing a lot of such operations.
+   Using Jujutsu, "amending a commit" also produces a new commit object, as in Git, but the new commit has the same change ID as the original. The same ID always represent the same change, and points to the latest version of the commit, no matter how much you amend the commit history. This is really useful if you're doing a lot of such operations.
 
-1. Jujutsu has a language called [revsets][jj-revsets] (similar to [Mercurial][mercurial]'s revsets), which allows you to select commits based on given properties. `jj log -r [REVSET]` only displays the commits in the log which the revset evaluates to. `jj log -r ::@` shows all ancestors of the current working copy commit (denoted by `@`), and is the equivalent to `git log`. Revsets allow for much more succinct and expressive filters than possible in Git.
+   (They're also really helpful in allowing you to understand how your change has evolved over time, although we won't be going through that much in this article.)
+
+1. Jujutsu has a language called [revsets][jj-revsets] (similar to [Mercurial's revsets][mercurial-revsets]), which allows you to select commits based on given properties. `jj log -r [REVSET]` only displays the commits in the log which the revset evaluates to. `jj log -r ::@` shows all ancestors of the current working copy commit (denoted by `@`), and is the equivalent to `git log`. Revsets allow for much more succinct and expressive filters than possible in Git.
+
+1. Jujutsu removes the concept of the index by using working copy commits. Changes made in the repository always update the working copy commit, and do not need to be separately staged and committed. Once you're done working on a change, `jj commit` will update the commit description and create a new empty change[^3], or you can use `jj commit -i` to interactively select the changes you want and split the working copy commit into two.
 
 ## Creating a new merge commit
 
-I've been working on a few distinct features, some of which I've already pushed to various branches in my fork of the repository. Let's take a look at the commits that I'm interested in—commits for which I'm the author, and which have pushed to a remote branch:
+In the repository, I've been working on a few distinct features, some of which I've already pushed to various branches in my fork of the repository. Let's take a look at the commits that I'm interested in—commits for which I'm the author, and have been pushed to a remote branch:
 
 ```ansi
 [0;1m[32m❯[0m [34mjj[39m [36mlog[39m [36m-r[39m [33m"mine() & remote_branches()"[39m
@@ -92,7 +96,7 @@ Parent commit      : [1m[38;5;5mqkl[0m[38;5;8myrnvv[39m [1m[38;5;4m579e[
 Added 0 files, modified 14 files, removed 0 files
 ```
 
-We've got a new merge commit with the change ID of `orl`, with the 2 parents specified. Note that you can specify as many parents as you want, and Jujutsu can still merge them. (I'm only specifying 2 here, so I can add more later.) Here's what the commit graph looks like at this point:
+This creates a new merge commit with the change ID of `orl`, with the 2 parents specified. Note that you can specify as many parents as you want, and Jujutsu can still merge them. (I'm only specifying 2 here, so I can add more later manually.) Here's what the commit graph looks like at this point:
 
 ```ansi
 [0;1m[32m❯[0m [34mjj[39m [36mlog[39m
@@ -113,9 +117,9 @@ We've got a new merge commit with the change ID of `orl`, with the 2 parents spe
 
 *Merge commits*, you might be wondering. *Is that a new workflow? Can't you just use Git for this?*
 
-Merge commits definitely aren't anything new—nearly every modern VCS tool has merge commits. However, Jujutsu's tooling and support for manipulating the commit graph is miles ahead of Git's. With Jujutsu, you can merge commits without fear of modifying your repository to an unrecoverable state. Jujutsu's [first-class conflicts][jj-conflicts] and [`jj undo`][jj-undo] makes it safe to merge different branches, play around with different configurations of your code, and then restore your original changes.
+Merge commits definitely aren't anything new—nearly every modern VCS tool has merge commits. However, Jujutsu's support for manipulating the commit graph is miles ahead of Git's. With Jujutsu, you can merge commits without fear of modifying your repository to an unrecoverable state. Jujutsu's [first-class conflicts][jj-conflicts] and [`jj undo`][jj-undo] makes it safe to merge different branches, play around with different configurations of your code, and then restore your original changes.
 
-Whether you find this article useful likely depends on how you're using your VCS right now. If you're just building a linear stack of commits, then this is probably not going to be very helpful. However, if you use separate branches to work on different features and group commits together for code review, then you might find this useful.
+Whether you find this article useful likely depends on how you're using your VCS right now. If you're just building a linear stack of commits, then this is probably not going to be very helpful. However, if you use separate branches to work on different features and group commits together for code review, then you might find this useful. (If you've read [Jackson Gabbard's article on Stacked Diffs vs Pull Requests][stacked-diff-vs-pr], I like to think that this workflow allows you to enjoy the benefits of a Stacked Diff-like workflow of working on a single branch, but still allows you to work with code forges like GitHub which expect a Pull Request-style workflow.)
 
 The gist of this workflow is basically: merge all or as many of your branches/commits together as you need, and keep that combined merge commit in your working directory.
 
@@ -212,7 +216,7 @@ Here, we've automatically rebased all the changes we're interested in with just 
 
 ## Adding a new parent from new changes
 
-Whilst testing out the features from these different changes, you might want to work on a new change. Instead of having to check out a new branch as you would in Git, you can just work on the new change on top of this merge commit.
+Whilst testing out the features from these different changes, you might want to work on a new change. Instead of having to check out a new branch as you would in Git, you can just work on the new change on top of this merge commit:
 
 ```ansi
 [0;1m[32m❯[0m [34mjj[39m [36mnew[39m
@@ -250,7 +254,7 @@ Committer: Benjamin Tan <[38;5;3mbenjamin@dev.ofcr.se[39m> ([38;5;6m23 hours 
 
 Here's the updated commit graph, with the new commit (change ID `rwq`) as a child of the merge commit:
 
-```ansi
+```ansi {4,5}
 [0;1m[32m❯[0m [34mjj[39m [36mlog[39m
 @  [1m[38;5;13movy[38;5;8mpxnus[39m [38;5;3mbenjamin@dev.ofcr.se[39m [38;5;14m1 minute ago[39m [38;5;12me0c[38;5;8m160c9[39m[0m
 │  [1m[38;5;10m(empty)[39m [38;5;10m(no description set)[39m[0m
@@ -275,7 +279,7 @@ Here's the updated commit graph, with the new commit (change ID `rwq`) as a chil
 ~
 ```
 
-Although this change was made on top of the merge commit, you typically wouldn't want to leave it there for long. You'd proably want to rebase it to a better location (not the mega merge commit), before sending the change up for pull review. For example, you can first rebase the new change `main`:
+Although this change was made on top of the merge commit, you typically wouldn't want to leave it there for long. You'd likely want to rebase it to a better location (not on top of the mega merge commit), before sending the change up for code review. For example, you can first rebase the new change onto `main`:
 
 ```ansi
 [0;1m[32m❯[0m [34mjj[39m [36mrebase[39m [36m-r[39m [36mrwq[39m [36m-d[39m [36mmain[39m
@@ -289,7 +293,7 @@ The `-r` option rebases only the given revision on top of the destination; it re
 
 After rebasing onto `main`, you can then add `rwq` as a new parent of the merge commit to keep the change applied to your working directory:
 
-```ansi
+```ansi {12,13}
 [0;1m[32m❯[0m [34mjj[39m [36mrebase[39m [36m-s[39m [36morl[39m [36m-d[39m [33m"all:orl-"[39m [36m-d[39m [36mrwq[39m
 Rebased 2 commits
 Working copy now at: [1m[38;5;13movy[38;5;8mpxnus[39m [38;5;12m7f2[38;5;8m78c0d[39m [38;5;10m(empty)[39m [38;5;10m(no description set)[0m
@@ -320,7 +324,7 @@ Added 0 files, modified 1 files, removed 0 files
 ~
 ```
 
-This persists the change in the working directory, whilst extracting it to a standalone commit which can be sent for code review. Here's how you can create a branch and push to an upstream repository like GitHub:
+This persists the change in the working directory, whilst extracting it to a standalone commit on top of the main branch which can be sent for code review. Here's how you can create a branch and push to an upstream repository (GitHub in this case):
 
 ```ansi
 [0;1m[32m❯[0m [34mjj[39m [36mbranch[39m [36mcreate[39m [36mtest[39m [36m-r[39m [36mrwq[39m
@@ -336,11 +340,11 @@ remote:
 
 ## Moving a change to a parent
 
-Another possible scenario is that you've made some modifications to your working copy, and want to shift them into of the arms of the merge commit.
+Another possible scenario is that you've made some modifications to your working copy, and want to shift the commit into one of the arms of the merge commit.
 
 This is what the commit graph looks like after making the change:
 
-```ansi
+```ansi {10,11}
 [0;1m[32m❯[0m [34mnvim[39m
 
 [0;1m[32m❯[0m [34mjj[39m [36mcommit[39m [36m-m[39m [33m"test change"[39m
@@ -374,8 +378,8 @@ Parent commit      : [1m[38;5;5movy[0m[38;5;8mpxnus[39m [1m[38;5;4me99[0
 ```
 
 There's a new change `ovy` which we want to set as the child of our previous change `rwq`, then update the branch `test` to point to `ovy`. There's two possible ways to do this right now using Jujutsu:
-1. Rebase `ovy` onto `rwq`, then rebase the merge commit to point to `ovy` instead of `rwq`, then update the branch `test` to point to `ovy`.
-2. Create a new commit after `rwq`, then squash the changes from `ovy` into it, then update the branch `test` to point to `ovy`.
+1. Rebase `ovy` onto `rwq`, rebase the merge commit to point to `ovy` instead of `rwq`, then update the branch `test` to point to `ovy`.
+2. Create a new commit after `rwq`, squash the changes from `ovy` into it, then update the branch `test` to point to `ovy`.
 
 The first way is similar to what's already been done above, so I'll show the second way of doing this. First, we insert a new commit after `rwq`, making sure to specify `--no-edit` to avoid checking out the changes in `rwq`:
 
@@ -389,7 +393,7 @@ Parent commit      : [1m[38;5;5movy[0m[38;5;8mpxnus[39m [1m[38;5;4m27b[0
 
 A new, empty commit with change ID `lqks` was created after `rwq`. Note how `lqks` was correctly inserted between `orl` and `rwq`, maintaining the ancestry of the merge commit:
 
-```ansi
+```ansi {8,9}
 [0;1m[32m❯[0m [34mjj[39m [36mlog[39m
 @  [1m[38;5;13muyl[38;5;8mlouwm[39m [38;5;3mbenjamin@dev.ofcr.se[39m [38;5;14m1 minute ago[39m [38;5;12m355e[38;5;8ma4ba[39m[0m
 │  [1m[38;5;10m(empty)[39m [38;5;10m(no description set)[39m[0m
@@ -420,7 +424,7 @@ A new, empty commit with change ID `lqks` was created after `rwq`. Note how `lqk
 
 Next, we can "squash" or move the changes from `ovy` into `lqks`. This is followed by updating the branch `test` to point to `lqks`:
 
-```ansi
+```ansi {13,14}
 [0;1m[32m❯[0m [34mjj[39m [36msquash[39m [36m--from[39m [36movy[39m [36m--into[39m [36mlqks[39m
 Rebased 2 descendant commits
 Working copy now at: [1m[38;5;13muyl[38;5;8mlouwm[39m [38;5;12m23f[38;5;8m02b9f[39m [38;5;10m(empty)[39m [38;5;10m(no description set)[0m
@@ -472,7 +476,7 @@ Parent commit      : [1m[38;5;5morl[0m[38;5;8mlnptq[39m [1m[38;5;4m090[0
 Added 0 files, modified 9 files, removed 0 files
 ```
 
-Previously, when adding new parents, we've specified the destinations using the flags `-d "all:orl-" -d NEW_PARENT_ID`. Now, we're specifying the destinations using `-d "all:orl- ~ qkl"`. The new argument for the destination highlights more of the revset language, in particular the set exclusion operator. As before, `orl-` evaluates to the set of all parents of `orl`, but `~ qkl` now excludes `qkl` from that set.
+Previously, when adding new parents, we've specified the destinations using the flags `-d "all:orl-" -d NEW_PARENT_ID`. Now, we're specifying the destinations using `-d "all:orl- ~ qkl"`. The new argument for the destination highlights more of the revset language, in particular the set difference operator. As before, `orl-` evaluates to the set of all parents of `orl`, but `~ qkl` now subtracts `qkl` from that set.
 
 This has the effect of removing `qkl` from the merge commit:
 
@@ -500,6 +504,8 @@ This has the effect of removing `qkl` from the merge commit:
 │  release: release version 0.16.0
 ~
 ```
+
+(Likewise, we could also have used set operations to add new parents to the merge commit: `jj rebase -d "all:orl- | NEW_PARENT_ID"` uses the set union operator to add the new ID to the set of existing parents.)
 
 ## Conflicting changes
 
@@ -538,7 +544,7 @@ Committer: Benjamin Tan <[38;5;3mbenjamin@dev.ofcr.se[39m> ([38;5;6m20 minute
 
 Here's the updated commit graph now, with `uyl` containing the change and no longer being empty:
 
-```ansi
+```ansi {4,5}
 [0;1m[32m❯[0m [34mjj[39m [36mlog[39m
 @  [1m[38;5;13mywr[38;5;8myozyt[39m [38;5;3mbenjamin@dev.ofcr.se[39m [38;5;14m35 seconds ago[39m [38;5;12m7fd[38;5;8m247f5[39m[0m
 │  [1m[38;5;10m(empty)[39m [38;5;10m(no description set)[39m[0m
@@ -567,7 +573,7 @@ Here's the updated commit graph now, with `uyl` containing the change and no lon
 
 I now want to shift this new commit into the arm of the merge commit with `zoz` (the `ssh-openssh` branch), so I create a new, empty commit after `zoz`:
 
-```ansi
+```ansi {14,15}
 [0;1m[32m❯[0m [34mjj[39m [36mnew[39m [36m--after[39m [36mzoz[39m [36m--no-edit[39m
 Created new commit [1m[38;5;5mtxs[0m[38;5;8mrozwq[39m [1m[38;5;4mae4f[0m[38;5;8mdff5[39m [38;5;2m(empty)[39m [38;5;2m(no description set)[39m
 Rebased 5 descendant commits
@@ -620,7 +626,7 @@ Parent commit      : [1m[38;5;5morl[0m[38;5;8mlnptq[39m [1m[38;5;4m065[0
 
 Jujutsu now warns that a new conflict appeared in `txs`, as expected. That's because `txs` doesn't have `rwq` in its history, which was where the first modification came from. Let's take a look at the log now:
 
-```ansi
+```ansi {6,7}
 [0;1m[32m❯[0m [34mjj[39m [36mlog[39m
 @  [1m[38;5;13mywr[38;5;8myozyt[39m [38;5;3mbenjamin@dev.ofcr.se[39m [38;5;14m5 seconds ago[39m [38;5;12m631[38;5;8mfda4b[39m[0m
 │  [1m[38;5;10m(empty)[39m [38;5;10m(no description set)[39m[0m
@@ -682,7 +688,7 @@ Committer: Benjamin Tan <[38;5;3mbenjamin@dev.ofcr.se[39m> ([38;5;6m13 minute
 
 The original line from `txs`'s parent commit in red is replaced with the new conflicting changes in green. Jujutsu's [conflict markers][jj-conflict-markers] are slightly different from Git: lines following `%%%%%%%` are a diff between 2 sides, whilst lines following `+++++++` are a snapshot of the changes a side. Here's my annotations on what the conflict markers mean:
 
-```
+```plaintext {3}#del {4}#ins {6,7}
 <<<<<<<
 %%%%%%% Diff from destination `txs` to base tree of `orl`
 -        tx.edit(&new_commit)?;
@@ -702,8 +708,6 @@ However, if we want to update the `ssh-openssh` branch to include the changes in
 Working copy now at: [1m[38;5;13mysw[38;5;8mompum[39m [38;5;12m3ea[38;5;8m0e8e9[39m [38;5;9m(conflict)[39m [38;5;10m(empty)[39m [38;5;10m(no description set)[0m
 Parent commit      : [1m[38;5;5mtxs[0m[38;5;8mrozwq[39m [1m[38;5;4m0bb[0m[38;5;8mdad29[39m [38;5;1m(conflict)[39m conflicting change
 Added 0 files, modified 5 files, removed 0 files
-There are unresolved conflicts at these paths:
-cli/src/commands/new.rs    [38;5;3m2-sided conflict[39m
 
 [0;1m[32m❯[0m [34mnvim[39m
 
@@ -727,13 +731,11 @@ Parent commit      : [1m[38;5;5mtxs[0m[38;5;8mrozwq[39m [1m[38;5;4ma11[0
 
 So, `txs` no longer has any conflicts, and we can update our branch to point to it and push it for review. However, if we go back to our merge commit `orl`, we can see that the merge commit is now marked as conflicting:
 
-```ansi
+```ansi {9,10}
 [0;1m[32m❯[0m [34mjj[39m [36mnew[39m [36morl[39m
 Working copy now at: [1m[38;5;13mnlw[38;5;8mnwups[39m [38;5;12m69a[38;5;8m1f4ce[39m [38;5;9m(conflict)[39m [38;5;10m(empty)[39m [38;5;10m(no description set)[0m
 Parent commit      : [1m[38;5;5morl[0m[38;5;8mlnptq[39m [1m[38;5;4m919[0m[38;5;8m2cf35[39m [38;5;1m(conflict)[39m [38;5;2m(empty)[39m [38;5;2m(no description set)[39m
 Added 0 files, modified 5 files, removed 0 files
-There are unresolved conflicts at these paths:
-cli/src/commands/new.rs    [38;5;3m2-sided conflict[39m
 
 [0;1m[32m❯[0m [34mjj[39m [36mlog[39m
 @  [1m[38;5;13mnlw[38;5;8mnwups[39m [38;5;3mbenjamin@dev.ofcr.se[39m [38;5;14m1 minute ago[39m [38;5;12m69a[38;5;8m1f4ce[39m [38;5;9mconflict[39m[0m
@@ -761,32 +763,102 @@ cli/src/commands/new.rs    [38;5;3m2-sided conflict[39m
 ~
 ```
 
-This makes sense, because we've removed manually resolved the conflicts from `txs`. Jujutsu no longer has the metadata about how the conflict came about from merging different files, so `orl` now has the conflict. Typically, this isn't that big an issue since you can just delay conflict resolution for that individual commit until you're done working on that branch. You can then remove that branch from the merge commit after that.
+This makes sense, because we've removed manually resolved the conflicts from `txs`. Jujutsu no longer has the metadata about how the conflict came about from merging different files, so `orl` now has a conflict. Typically, this isn't that big an issue since you can just delay conflict resolution for that individual commit until you're done working on that branch. You can then remove that branch from the merge commit after that.
+
+If you do want to continue working on both branches, you can also restore the state of the working directory to its original state, before squashing the commit. First, get the commit ID of the change `uyl` that we wrote originally, before any commit manipulation (`128d5444` from above), then run `jj restore`:
+
+```ansi
+[0;1m[32m❯[0m [34mjj[39m [36mrestore[39m [36m--from[39m [36m128d5444[39m [36m--to[39m [36morl[39m
+Created [1m[38;5;5morlln[0m[38;5;8mptq[39m [1m[38;5;4mf2388[0m[38;5;8m131[39m [38;5;3m(no description set)[39m
+Rebased 1 descendant commits
+Working copy now at: [1m[38;5;13mnlw[38;5;8mnwups[39m [38;5;12md37[38;5;8mfb681[39m [38;5;10m(empty)[39m [38;5;10m(no description set)[0m
+Parent commit      : [1m[38;5;5morl[0m[38;5;8mlnptq[39m [1m[38;5;4mf23[0m[38;5;8m88131[39m [38;5;3m(no description set)[39m
+Added 0 files, modified 1 files, removed 0 files
+```
+
+This restores all the files in commit `orl` to their state in commit `128d5444`—the original files before the conflict occured due to squashing of commits. This has the effect of solving the conflict within the merge commit `orl`:
+
+```ansi {4,5}
+[0;1m[32m❯[0m [34mjj[39m [36mlog[39m
+@  [1m[38;5;13mnlw[38;5;8mnwups[39m [38;5;3mbenjamin@dev.ofcr.se[39m [38;5;14m39 seconds ago[39m [38;5;12md37[38;5;8mfb681[39m[0m
+│  [1m[38;5;10m(empty)[39m [38;5;10m(no description set)[39m[0m
+◉      [1m[38;5;5morl[0m[38;5;8mlnptq[39m [38;5;3mbenjamin@dev.ofcr.se[39m [38;5;6m39 seconds ago[39m [38;5;2mHEAD@git[39m [1m[38;5;4mf23[0m[38;5;8m88131[39m
+├─┬─╮  [38;5;3m(no description set)[39m
+│ │ ◉  [1m[38;5;5mtxs[0m[38;5;8mrozwq[39m [38;5;3mbenjamin@dev.ofcr.se[39m [38;5;6m3 days ago[39m [1m[38;5;4ma11[0m[38;5;8m303a3[39m
+│ │ │  conflicting change
+│ │ ◉  [1m[38;5;5mzoz[0m[38;5;8mvwmow[39m [38;5;3mbenjamin@dev.ofcr.se[39m [38;5;6m4 days ago[39m [38;5;5mssh-openssh*[39m [1m[38;5;4mc6c[0m[38;5;8m73906[39m
+│ │ │  git: update error message for SSH error to stop referencing libssh2
+│ │ ◉  [1m[38;5;5myow[0m[38;5;8mkkkqn[39m [38;5;3mbenjamin@dev.ofcr.se[39m [38;5;6m4 days ago[39m [1m[38;5;4mffe[0m[38;5;8mc92c9[39m
+│ │ │  git: use prerelease version of `git2` with OpenSSH support
+│ ◉ │  [1m[38;5;5mwtm[0m[38;5;8mqulxn[39m [38;5;3mbenjamin@dev.ofcr.se[39m [38;5;6m4 days ago[39m [38;5;5mpush-uqxvnturzsuu*[39m [1m[38;5;4m867[0m[38;5;8m3733e[39m
+│ │ │  rebase: allow both `--insert-after` and `--insert-before` to be used simultaneously
+│ ◉ │  [1m[38;5;5muqx[0m[38;5;8mvntur[39m [38;5;3mbenjamin@dev.ofcr.se[39m [38;5;6m4 days ago[39m [1m[38;5;4mdd7[0m[38;5;8m454a2[39m
+│ │ │  rebase: add `--insert-after` and `--insert-before` options
+│ ◉ │  [1m[38;5;5mnkzsq[0m[38;5;8mppm[39m [38;5;3mbenjamin@dev.ofcr.se[39m [38;5;6m4 days ago[39m [1m[38;5;4m0a94[0m[38;5;8m9714[39m
+│ ├─╯  rebase: extract out some functions from `rebase_revision`
+◉ │  [1m[38;5;5mlqks[0m[38;5;8mrtkk[39m [38;5;3mbenjamin@dev.ofcr.se[39m [38;5;6m4 days ago[39m [38;5;5mtest*[39m [1m[38;5;4m07d[0m[38;5;8m8a576[39m
+│ │  misc: test change
+◉ │  [1m[38;5;5mrwq[0m[38;5;8mywnzl[39m [38;5;3mbenjamin@dev.ofcr.se[39m [38;5;6m4 days ago[39m [38;5;5mtest@bnjmnt4n[39m [1m[38;5;4m402[0m[38;5;8mf7ad8[39m
+├─╯  new: avoid manual `unwrap()` call
+◉  [1m[38;5;5moqtz[0m[38;5;8mskyx[39m [38;5;3mmartinvonz@google.com[39m [38;5;6m5 days ago[39m [38;5;5mmain*[39m [38;5;5mv0.16.0[39m [1m[38;5;4m2dcd[0m[38;5;8mc7fb[39m
+│  release: release version 0.16.0
+~
+
+[0;1m[32m❯[0m [34mjj[39m [36mshow[39m [36morl[39m
+Commit ID: [38;5;4mf2388131cba4be8fe0b267dcef1af8d823184851[39m
+Change ID: [38;5;5morllnptqzkuqpsonzzkytxlrzpyxmwtn[39m
+Author: Benjamin Tan <[38;5;3mbenjamin@dev.ofcr.se[39m> ([38;5;6m4 days ago[39m)
+Committer: Benjamin Tan <[38;5;3mbenjamin@dev.ofcr.se[39m> ([38;5;6m1 minute ago[39m)
+
+[38;5;3m    (no description set)[39m
+
+[1mdiff --git a/cli/src/commands/new.rs b/cli/src/commands/new.rs[0m
+[1mindex 0000000000...b946b93769 100644[0m
+[1m--- a/cli/src/commands/new.rs[0m
+[1m+++ b/cli/src/commands/new.rs[0m
+[38;5;6m@@ -193,14 +193,8 @@[39m
+             writeln!(formatter)?;
+         }
+     } else {
+[38;5;1m-<<<<<<<[39m
+[38;5;1m-%%%%%%%[39m
+[38;5;1m--        tx.edit(&new_commit).unwrap();[39m
+[38;5;1m-+        tx.edit(&new_commit)?;[39m
+[38;5;1m-+++++++[39m
+         let commit = new_commit;
+         tx.edit(&commit).unwrap();
+[38;5;1m->>>>>>>[39m
+         // The description of the new commit will be printed by tx.finish()
+     }
+     if num_rebased > 0 {
+```
 
 ## Conclusion
 
-I've shown how you can use Jujutsu to manipulate merge commits and work on separate logical branches of code, by adding and removing parents using the `jj rebase` command.
+I've shown how you can use Jujutsu to manipulate merge commits and work on separate logical branches of code, by adding and removing parents using the `jj rebase` command. Arguably, this workflow might be better visualized with a graphical interface to see how the commit graph is being manipulated. There's a GUI app for Jujutsu, called [GG][gg], with a [pretty convincing demo][gg-demo] of this workflow.
 
 Working on multiple branches of code at the same time can be really powerful. Personally, I use this workflow all the time to avoid having to switch branches. This is especially convenient when working on small bugfixes where it's definitely easier to just work in the current directory.
 
-Merging multiple branches together also allows you to very simply test out various features at the same time, without having to wait for all of them to be merged into the main branch. In fact, I use this to build a custom `jj` binary which contains various features which haven't been merged into the trunk.
+Merging multiple branches together also allows you to very simply test out various features at the same time, without having to wait for all of them to be merged into the main branch. In fact, I use this to build a custom `jj` binary which contains various features which haven't been merged into `main`.
 
-Even if you aren't convinced about switching to Jujutsu, I think this workflow is still valuable. In fact, a new Git client [GitButler][gitbutler] was recently launched with a similar end product: making it easy to activate different "virtual branches" in your working directory. Otherwise, alternative tools like [git-branchless][git-branchless] might allow you to do something similar.
+Even if you aren't convinced about switching to Jujutsu, I think this workflow is still valuable. In fact, [GitButler][gitbutler]—a new Git client—was recently launched with a similar end product: making it easy to activate different "virtual branches" in your working directory. Otherwise, alternative tools like [git-branchless][git-branchless] might allow you to do something similar.
 
-If you are intrigued by Jujutsu, do check out the [introduction][jj-intro] and [tutorial][jj-tutorial]. I'd also recommend [Chris's article][chris-krycho-jj-init] and [video series][chris-krycho-video-series].
+If you are intrigued by Jujutsu, do check out the [introduction][jj-intro] and [tutorial][jj-tutorial]. I'd also recommend [Chris's article][chris-krycho-jj-init] and [video series][chris-krycho-video-series]. Steve Klabnik also has a [long-form tutorial][steve-klabnik-tutorial] on Jujutsu, which includes a [chapter on this workflow][steve-klabnik-merge-workflow].
 
 
 [^1]: Hmmm, maybe *The Austin™ Mega Merge Strategy<sup>®</sup>* is the better name after all...
-[^2]: Actually, you **can** have change IDs associated with multiple commits, but that's out of the scope of this article.
+[^2]: Actually, you *can* have change IDs associated with multiple commits, but that's out of the scope of this article.
+[^3]: `jj commit` is a shorthand for `jj describe`, to describe the current change, and `jj new`, to create a new change.
 
 [chris-krycho-jj-init]: https://v5.chriskrycho.com/essays/jj-init/
 [jj]: https://martinvonz.github.io/jj/
 [aseipp]: https://www.austinseipp.com/
 [jj-repo]: https://github.com/martinvonz/jj
 [jj-revsets]: https://martinvonz.github.io/jj/latest/revsets/
-[mercurial]: https://www.mercurial-scm.org/
+[mercurial-revsets]: https://repo.mercurial-scm.org/hg/help/revsets
 [jj-conflicts]: https://martinvonz.github.io/jj/latest/conflicts/
 [jj-undo]: https://martinvonz.github.io/jj/latest/operation-log/
+[stacked-diff-vs-pr]: https://jg.gg/2018/09/29/stacked-diffs-versus-pull-requests/
 [jj-rebase-move-commits]: https://github.com/martinvonz/jj/issues/1188
 [jj-conflict-markers]: https://martinvonz.github.io/jj/latest/conflicts/#conflict-markers
 [gitbutler]: https://gitbutler.com/
@@ -794,3 +866,7 @@ If you are intrigued by Jujutsu, do check out the [introduction][jj-intro] and [
 [jj-intro]: https://github.com/martinvonz/jj#introduction
 [jj-tutorial]: https://martinvonz.github.io/jj/latest/tutorial/
 [chris-krycho-video-series]: https://www.youtube.com/playlist?list=PLelyiwKWHHAq01Pvmpf6x7J0y-yQpmtxp
+[steve-klabnik-tutorial]: https://steveklabnik.github.io/jujutsu-tutorial/
+[steve-klabnik-merge-workflow]: https://steveklabnik.github.io/jujutsu-tutorial/advanced/simultaneous-edits.html
+[gg]: https://github.com/gulbanana/gg
+[gg-demo]: https://www.youtube.com/watch?v=cD9L3Mi1Vy4
