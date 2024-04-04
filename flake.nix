@@ -1,7 +1,7 @@
 {
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs?rev=0c6d8c783336a59f4c59d4a6daed6ab269c4b361";
-    flake-utils.url = "github:numtide/flake-utils?rev=4022d587cbbfd70fe950c1e2083a02621806a725";
+    nixpkgs.url = "github:NixOS/nixpkgs?rev=a3ed7406349a9335cb4c2a71369b697cecd9d351";
+    flake-utils.url = "github:numtide/flake-utils?rev=b1d9ab70662946ef0850d488da1c9019f3a9752a";
     crane = {
       url = "github:ipetkov/crane";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -53,7 +53,7 @@
 
           buildInputs = [
             pkgs.flyctl
-            pkgs.nodejs-18_x
+            pkgs.nodejs
             pkgs.nodePackages."@astrojs/language-server"
             pkgs.nodePackages.typescript-language-server
             rust
