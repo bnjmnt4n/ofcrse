@@ -1,5 +1,6 @@
 import { defineConfig } from "astro/config";
 import sitemap from "@astrojs/sitemap";
+import rehypePrettyCode from "rehype-pretty-code";
 import remarkHeadingId from "remark-heading-id";
 
 export default defineConfig({
@@ -7,10 +8,19 @@ export default defineConfig({
   integrations: [sitemap()],
   scopedStyleStrategy: "class",
   markdown: {
-    shikiConfig: {
-      theme: 'github-dark-dimmed',
-      wrap: false,
-    },
+    syntaxHighlight: false,
+    rehypePlugins: [
+      [
+        rehypePrettyCode,
+        {
+          theme: "github-dark-dimmed",
+          keepBackground: true,
+          defaultLang: {
+            block: "plaintext",
+          },
+        },
+      ],
+    ],
     remarkPlugins: [remarkHeadingId],
   },
 });
