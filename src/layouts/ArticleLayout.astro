@@ -287,7 +287,7 @@ const images = import.meta.glob<{ default: ImageMetadata }>("/src/assets/images/
     </div>
 
     <div class="content">
-      {coverImage && (
+      {typeof coverImage === "string" && typeof images[coverImage] === "function" && (
         <div class="image-wrapper">
           <Image src={images[coverImage]()} alt="" />
         </div>
