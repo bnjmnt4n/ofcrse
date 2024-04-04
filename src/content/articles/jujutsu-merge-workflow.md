@@ -314,7 +314,7 @@ remote:
 
 ## Moving a change to a parent
 
-Another possible scenario is that you've made some modifications to your working copy, and want to shift them into one the of the arms of the merge commit.
+Another possible scenario is that you've made some modifications to your working copy, and want to shift them into of the arms of the merge commit.
 
 This is what the commit graph looks like after making the change:
 
