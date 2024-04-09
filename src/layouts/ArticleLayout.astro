@@ -83,7 +83,11 @@ const {
       hyphens: auto;
     }
 
-    article .content .image-wrapper {
+    .image-wrapper {
+      margin: 2rem -2rem;
+    }
+
+    .content .image-wrapper {
       margin: 2rem -1.5rem 2rem;
       padding-left: 0;
       padding-right: 0;
@@ -171,6 +175,21 @@ const {
         margin-right: -24px;
       }
 
+      :global(#nav) {
+        opacity: 0.95;
+      }
+
+      .image-wrapper {
+        margin-left: calc(-1 * (var(--sidebar-width) + 96px));
+        width: calc(var(--sidebar-width) + 96px + var(--content-width) + 96px);
+        aspect-ratio: 6 / 2;
+      }
+
+      .image-wrapper img {
+        width: 100%;
+        object-fit: cover;
+      }
+
       .sidebar-wrapper {
         width: var(--sidebar-width);
         height: 100%;
@@ -242,6 +261,11 @@ const {
     }
   </style>
   <Navigation activePath="/writing" />
+  {typeof ogImage === "string" && (
+    <div class="image-wrapper">
+      <Image src={ogImage} width={1200} height={600} alt="" />
+    </div>
+  )}
   <article>
     <h1>{title}</h1>
     <div class="sidebar-wrapper">
@@ -285,11 +309,6 @@ const {
     </div>
 
     <div class="content">
-      {typeof ogImage === "string" && (
-        <div class="image-wrapper">
-          <Image src={ogImage} width={1200} height={600} alt="" />
-        </div>
-      )}
       <slot />
     </div>
   </article>
