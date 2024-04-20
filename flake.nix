@@ -1,6 +1,6 @@
 {
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs?rev=a3ed7406349a9335cb4c2a71369b697cecd9d351";
+    nixpkgs.url = "github:NixOS/nixpkgs?rev=a76c4553d7e741e17f289224eda135423de0491d";
     flake-utils.url = "github:numtide/flake-utils?rev=b1d9ab70662946ef0850d488da1c9019f3a9752a";
     crane = {
       url = "github:ipetkov/crane";
@@ -32,24 +32,45 @@
         nativeBuildInputs = [ pkgs.pkg-config ];
         buildInputs = [ pkgs.openssl ] ++ pkgs.lib.optionals pkgs.stdenv.isDarwin [
           pkgs.darwin.apple_sdk.frameworks.Security
-          # pkgs.darwin.libiconv
         ];
 
-        ofcrse = craneLib.buildPackage {
+        site = pkgs.buildNpmPackage {
+          name = "ofcrse-site";
+          src = pkgs.lib.cleanSourceWith {
+            src = pkgs.lib.cleanSource ./.;
+            filter = name: type:
+              let baseName = baseNameOf (toString name); in
+              !(type == "directory" && (baseName == "node_modules" || baseName == "target" || baseName == "dist"));
+          };
+
+          buildInputs = [ pkgs.vips ];
+          nativeBuildInputs = [ pkgs.pkg-config ];
+
+          installPhase = ''
+            runHook preInstall
+            cp -pr --reflink=auto dist $out/
+            runHook postInstall
+          '';
+
+          npmDepsHash = "sha256-22jDjw0E1hkWJoyypPLMGScsTXZBK8TYed+v6YwrC3s=";
+        };
+
+        server = craneLib.buildPackage {
           src = craneLib.cleanCargoSource ./.;
 
           inherit nativeBuildInputs buildInputs;
         };
       in
       rec {
-        # TODO: build Astro app.
-        packages.default = ofcrse;
+        packages.site = site;
+        packages.server = server;
+        packages.default = server;
         apps.default = flake-utils.lib.mkApp {
-          drv = ofcrse;
+          drv = server;
         };
 
         devShell = pkgs.mkShell {
-          inputsFrom = [ ofcrse ];
+          inputsFrom = [ server ];
 
           buildInputs = [
             pkgs.flyctl
@@ -63,8 +84,6 @@
             (pkgs.python3.withPackages (ps: [ ps.fonttools ] ++ ps.fonttools.optional-dependencies.woff))
           ];
 
-          RUST_LOG = "info";
-          RUST_BACKTRACE = 1;
           LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath buildInputs;
         };
       });

@@ -1,4 +1,5 @@
+result
 node_modules
 dist
-/target
+target
 .astro
