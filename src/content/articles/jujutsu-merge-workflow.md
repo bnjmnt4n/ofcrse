@@ -4,6 +4,7 @@ description: A merge workflow for activating multiple branches simultaneously us
 cover:
   image: /assets/images/cover/jujutsu-merge-workflow.jpg
 publishedAt: 2024-04-10
+updatedAt: 2024-07-16
 ---
 
 ## Introduction
@@ -463,7 +464,13 @@ The log now shows that `test@bnjmnt4n` (the branch `test` on the remote `bnjmnt4
 
 The biggest downside of the `jj squash` workflow is that the change ID of the squashed commit is lost. You'll need to refer to the change ID of the newly created commit instead.
 
-However, there are [plans][jj-rebase-move-commits] to improve Jujutsu to make it easier to move commits around the commit graph. In the future, a command like `jj rebase -r ovy --after rwq` might be able to move the commit whilst maintaining its chnage ID.
+However, there are [plans][jj-rebase-move-commits] to improve Jujutsu to make it easier to move commits around the commit graph. In the future, a command like `jj rebase -r ovy --after rwq` might be able to move the commit whilst maintaining its change ID.
+
+<aside>
+
+Update: As of [Jujutsu v0.17.0][jj-v0.17.0], the `jj rebase` command has the new `--insert-after` and `--insert-before` options (short-from: `--after`/`--before`) to insert specific commits between a node and its children, or a node and its parents. The command `jj rebase -r ovy --after rwq` can now be used to move the commit `ovy` after commit `rwq` and before any of `rwq`'s children, whilst maintaining `ovy`'s' change ID.
+
+</aside>
 
 ## Removing parents
 
@@ -861,6 +868,7 @@ If you are intrigued by Jujutsu, do check out the [introduction][jj-intro] and [
 [jj-undo]: https://martinvonz.github.io/jj/latest/operation-log/
 [stacked-diff-vs-pr]: https://jg.gg/2018/09/29/stacked-diffs-versus-pull-requests/
 [jj-rebase-move-commits]: https://github.com/martinvonz/jj/issues/1188
+[jj-v0.17.0]: https://github.com/martinvonz/jj/releases/tag/v0.17.0
 [jj-conflict-markers]: https://martinvonz.github.io/jj/latest/conflicts/#conflict-markers
 [gitbutler]: https://gitbutler.com/
 [git-branchless]: https://github.com/arxanas/git-branchless
