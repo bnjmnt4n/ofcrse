@@ -1,6 +1,6 @@
 {
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs?rev=a76c4553d7e741e17f289224eda135423de0491d";
+    nixpkgs.url = "github:NixOS/nixpkgs?rev=b2c1f10bfbb3f617ea8e8669ac13f3f56ceb2ea2";
     flake-utils.url = "github:numtide/flake-utils?rev=b1d9ab70662946ef0850d488da1c9019f3a9752a";
     crane = {
       url = "github:ipetkov/crane";
