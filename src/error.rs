@@ -90,7 +90,7 @@ impl IntoResponse for HttpError {
             )
                 .into_response(),
             HttpError::Internal { err } => {
-                let err = format!("<pre>{}</pre>", err);
+                let err = format!("<pre>{err}</pre>");
                 let contents = ERROR_500.replace("<!-- ERROR -->", &err);
                 (
                     StatusCode::INTERNAL_SERVER_ERROR,

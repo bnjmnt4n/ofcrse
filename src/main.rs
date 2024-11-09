@@ -247,10 +247,7 @@ fn primary_router() -> Router<PrimaryAppState> {
             let query = request.uri().query();
 
             let uri = format!(
-                "{}://{}{}{}{}",
-                proto,
-                host,
-                path,
+                "{proto}://{host}{path}{}{}",
                 query.map_or("", |_| "?"),
                 query.unwrap_or("")
             );
@@ -263,8 +260,7 @@ fn primary_router() -> Router<PrimaryAppState> {
                 let query = request.uri().query();
 
                 let uri = format!(
-                    "{}/index.html{}{}",
-                    path,
+                    "{path}/index.html{}{}",
                     query.map_or("", |_| "?"),
                     query.unwrap_or("")
                 );
@@ -317,7 +313,7 @@ async fn goatcounter_proxy(
         .unwrap_or_else(|| req.uri().path());
     let path = path.strip_prefix("/count").unwrap();
 
-    let uri = format!("{}{}", goatcounter_url, path);
+    let uri = format!("{goatcounter_url}{path}");
     *req.uri_mut() = Uri::try_from(uri)?;
 
     let headers_map = req.headers_mut();
@@ -383,7 +379,7 @@ fn redirect_to_primary_site_router(site_url: String) -> Router {
             .map(|v| v.as_str())
             .unwrap_or_else(|| req.uri().path());
 
-        let uri = format!("{}{}", site_url, path);
+        let uri = format!("{site_url}{path}");
 
         (StatusCode::MOVED_PERMANENTLY, [(header::LOCATION, uri)])
     })
