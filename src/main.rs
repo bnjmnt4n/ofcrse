@@ -210,9 +210,9 @@ fn initialize_app(app: Router, app_state: AppState, path: &str) -> Router {
                 "health.check" => health_check_app,
                 "l.ofcr.se" => shortlink_app,
                 "music.ofcr.se" => music_shortlink_app,
-                "oftcour.se" | "www.oftcour.se" | "ofcrse.fly.dev" => redirect_to_primary_site,
+                "ofcrse.fly.dev" => redirect_to_primary_site,
                 host => {
-                    if host.ends_with(".ofcr.se") || host.ends_with(".oftcour.se") {
+                    if host.ends_with(".ofcr.se") {
                         return Err(HttpError::NotFound);
                     } else {
                         primary_app
