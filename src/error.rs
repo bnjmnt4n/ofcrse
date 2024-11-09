@@ -7,18 +7,6 @@ use axum::{
 use color_eyre::Report;
 use tracing::error;
 
-pub type HttpResult = Result<Response, HttpError>;
-
-pub trait IntoHttp {
-    fn into_http(self) -> HttpResult;
-}
-
-impl<T: IntoResponse> IntoHttp for T {
-    fn into_http(self) -> HttpResult {
-        Ok(self.into_response())
-    }
-}
-
 #[derive(Debug)]
 pub enum HttpError {
     NotFound,
