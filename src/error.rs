@@ -1,5 +1,10 @@
 // Based on https://fasterthanli.me/series/updating-fasterthanli-me-for-2022/part-2.
 
+use std::{
+    io::{BufReader, Read},
+    sync::OnceLock,
+};
+
 use axum::{
     http::{self, header, StatusCode},
     response::{IntoResponse, Response},
@@ -76,9 +81,36 @@ impl_from!(hyper::Error);
 impl_from!(hyper_util::client::legacy::Error);
 impl_from!(serde_json::Error);
 
-const ERROR_404: &[u8] = include_bytes!("../dist/404.html");
-const ERROR_500: &str = include_str!("../dist/500.html");
 const CONTENT_TYPE_HTML: &str = "text/html";
+
+/// Reads the contents of the 404 and 500 error pages into memory,
+/// panicking if the files are not found.
+pub fn read_error_file_contents() {
+    error_404_contents();
+    error_500_contents();
+}
+
+fn error_404_contents() -> &'static [u8] {
+    static ERROR_404: OnceLock<Vec<u8>> = OnceLock::new();
+    &ERROR_404.get_or_init(|| {
+        let file = std::fs::File::open("dist/404.html").expect("could not open 404 file");
+        let mut reader = BufReader::new(file);
+        let mut contents = vec![];
+        reader.read_to_end(&mut contents).unwrap();
+        contents
+    })
+}
+
+fn error_500_contents() -> &'static str {
+    static ERROR_500: OnceLock<String> = OnceLock::new();
+    &ERROR_500.get_or_init(|| {
+        let file = std::fs::File::open("dist/404.html").expect("could not open 500 file");
+        let mut reader = BufReader::new(file);
+        let mut contents = String::new();
+        reader.read_to_string(&mut contents).unwrap();
+        contents
+    })
+}
 
 impl IntoResponse for HttpError {
     fn into_response(self) -> Response {
@@ -86,12 +118,12 @@ impl IntoResponse for HttpError {
             HttpError::NotFound => (
                 StatusCode::NOT_FOUND,
                 [(header::CONTENT_TYPE, CONTENT_TYPE_HTML)],
-                ERROR_404,
+                error_404_contents(),
             )
                 .into_response(),
             HttpError::Internal { err } => {
                 let err = format!("<pre>{err}</pre>");
-                let contents = ERROR_500.replace("<!-- ERROR -->", &err);
+                let contents = error_500_contents().replace("<!-- ERROR -->", &err);
                 (
                     StatusCode::INTERNAL_SERVER_ERROR,
                     [(header::CONTENT_TYPE, CONTENT_TYPE_HTML)],

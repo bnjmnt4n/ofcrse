@@ -17,7 +17,6 @@ COPY Cargo.lock Cargo.toml .
 RUN cargo build --release
 RUN rm -r src target/release/deps/ofcrse*
 COPY src/*.rs ./src/
-COPY --from=site-builder /site/dist/ ./dist/
 RUN cargo build --release
 
 FROM alpine:3.18

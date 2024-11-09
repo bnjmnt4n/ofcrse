@@ -78,6 +78,8 @@ async fn main() -> Result<(), color_eyre::Report> {
         HashMap::new()
     });
 
+    error::read_error_file_contents();
+
     let app_state = AppState {
         site_url,
         goatcounter_url,
