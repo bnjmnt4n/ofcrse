@@ -1,22 +1,22 @@
-FROM node:18-alpine as site-builder
+FROM node:18-alpine AS site-builder
 ARG NPM_BUILD_COMMAND=build
 WORKDIR /site
-COPY package.json package-lock.json .
+COPY site/package.json site/package-lock.json .
 RUN npm clean-install
-COPY astro.config.mjs .
-COPY public/ ./public/
-COPY src/ ./src/
+COPY site/astro.config.mjs .
+COPY site/public/ ./public/
+COPY site/src/ ./src/
 RUN npm run $NPM_BUILD_COMMAND
 
-FROM rust:1.70-alpine as app-builder
+FROM rust:1.70-alpine AS app-builder
 RUN apk add --no-cache libc-dev make perl pkgconfig
 RUN USER=root cargo new --bin ofcrse
 WORKDIR /ofcrse
-COPY Cargo.lock Cargo.toml .
+COPY server/Cargo.lock server/Cargo.toml .
 # Cache dependencies.
 RUN cargo build --release
 RUN rm -r src target/release/deps/ofcrse*
-COPY src/*.rs ./src/
+COPY server/src/ ./src/
 RUN cargo build --release
 
 FROM alpine:3.18

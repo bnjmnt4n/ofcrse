@@ -1,90 +1,95 @@
 {
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs?rev=b2c1f10bfbb3f617ea8e8669ac13f3f56ceb2ea2";
-    flake-utils.url = "github:numtide/flake-utils?rev=b1d9ab70662946ef0850d488da1c9019f3a9752a";
     crane = {
       url = "github:ipetkov/crane";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     rust-overlay = {
       url = "github:oxalica/rust-overlay";
-      inputs = {
-        nixpkgs.follows = "nixpkgs";
-        flake-utils.follows = "flake-utils";
-      };
+      inputs.nixpkgs.follows = "nixpkgs";
     };
   };
 
-  outputs = { self, nixpkgs, flake-utils, crane, rust-overlay }:
-    flake-utils.lib.eachDefaultSystem (system:
+  outputs = { self, nixpkgs, crane, rust-overlay }:
+    let
+      systems = ["aarch64-darwin" "x86_64-darwin" "aarch64-linux" "x86_64-linux"];
+      forEachSystem = systems: f: builtins.foldl' (acc: system: nixpkgs.lib.recursiveUpdate acc (f system)) {} systems;
+    in
+    forEachSystem systems (system:
       let
         pkgs = import nixpkgs {
           inherit system;
           overlays = [ (import rust-overlay) ];
         };
 
-        rust = pkgs.rust-bin.stable.latest.default.override {
-          extensions = [ "rust-src" "rustfmt" ];
-        };
-
-        craneLib = (crane.mkLib pkgs).overrideToolchain rust;
-
-        nativeBuildInputs = [ pkgs.pkg-config ];
-        buildInputs = [ pkgs.openssl ] ++ pkgs.lib.optionals pkgs.stdenv.isDarwin [
-          pkgs.darwin.apple_sdk.frameworks.Security
-        ];
-
-        site = pkgs.buildNpmPackage {
-          name = "ofcrse-site";
-          src = pkgs.lib.cleanSourceWith {
-            src = pkgs.lib.cleanSource ./.;
-            filter = name: type:
-              let baseName = baseNameOf (toString name); in
-              !(type == "directory" && (baseName == "node_modules" || baseName == "target" || baseName == "dist"));
-          };
+        npmPackageCommonArgs = {
+          src = pkgs.lib.cleanSource ./site;
 
           buildInputs = [ pkgs.vips ];
           nativeBuildInputs = [ pkgs.pkg-config ];
 
           installPhase = ''
             runHook preInstall
-            cp -pr --reflink=auto dist $out/
+            mkdir $out
+            cp -r dist $out/
             runHook postInstall
           '';
 
-          npmDepsHash = "sha256-22jDjw0E1hkWJoyypPLMGScsTXZBK8TYed+v6YwrC3s=";
+          npmDepsHash = "sha256-Y8TZqclpKuTvLbOkEgB6rI0Y+p70ftkgdjeU/UwaxJ4=";
         };
 
-        server = craneLib.buildPackage {
-          src = craneLib.cleanCargoSource ./.;
+        siteDev = pkgs.buildNpmPackage (npmPackageCommonArgs // {
+          name = "ofcrse-site-dev";
+          npmBuildScript = "build-dev";
+        });
+        site = pkgs.buildNpmPackage (npmPackageCommonArgs // {
+          name = "ofcrse-site";
+          npmBuildScript = "build";
+        });
 
-          inherit nativeBuildInputs buildInputs;
+        rust = pkgs.rust-bin.stable.latest.default.override {
+          extensions = [ "rust-src" "rustfmt" "rust-analyzer" ];
         };
+
+        craneLib = (crane.mkLib pkgs).overrideToolchain rust;
+
+        cranePackageCommonArgs = {
+          src = craneLib.cleanCargoSource ./server;
+          strictDeps = true;
+
+          nativeBuildInputs = [ pkgs.pkg-config ];
+          buildInputs = [ pkgs.openssl ] ++ pkgs.lib.optionals pkgs.stdenv.isDarwin [
+            pkgs.darwin.apple_sdk.frameworks.Security
+            pkgs.libiconv
+          ];
+        };
+
+        server = craneLib.buildPackage (cranePackageCommonArgs // {
+          cargoArtifacts = craneLib.buildDepsOnly cranePackageCommonArgs;
+        });
       in
-      rec {
-        packages.site = site;
-        packages.server = server;
-        packages.default = server;
-        apps.default = flake-utils.lib.mkApp {
-          drv = server;
+      {
+        checks."${system}" = {
+          inherit site siteDev server;
+        };
+        packages."${system}" = {
+          inherit site siteDev server;
+          default = server;
         };
 
-        devShell = pkgs.mkShell {
-          inputsFrom = [ server ];
+        devShells."${system}".default = craneLib.devShell {
+          checks = self.checks."${system}";
 
-          buildInputs = [
+          packages = [
             pkgs.flyctl
             pkgs.nodejs
             pkgs.nodePackages."@astrojs/language-server"
             pkgs.nodePackages.typescript-language-server
-            rust
-            pkgs.rust-analyzer
           ] ++ pkgs.lib.optional (!pkgs.stdenv.isDarwin) [
             pkgs.ttfautohint
             (pkgs.python3.withPackages (ps: [ ps.fonttools ] ++ ps.fonttools.optional-dependencies.woff))
           ];
-
-          LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath buildInputs;
         };
       });
 }
