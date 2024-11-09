@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - dev
+  pull_request:
 
 jobs:
   build-site:
@@ -12,47 +13,30 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
-          cache-dependency-path: site/package-lock.json
+      - uses: DeterminateSystems/nix-installer-action@main
+      - uses: DeterminateSystems/magic-nix-cache-action@main
       - name: Build site
-        working-directory: site
-        run: |
-          npm ci
-          npm run $NPM_BUILD_COMMAND
-        env:
-          NPM_BUILD_COMMAND: ${{ github.ref == 'refs/heads/main' && 'build' || 'build-dev' }}
+        run: nix build .#${{ github.ref == 'refs/heads/main' && 'site' || 'siteDev' }}
       - name: Archive site
         uses: actions/upload-artifact@v4
         with:
           name: site
-          path: site/dist
+          path: result/dist
 
   build-server:
     name: Build server
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            server/target
-          key: rust-cache-${{ runner.os }}-${{ hashFiles('**/Cargo.lock') }}
-      - name: Setup Rust
-        run: rustup update --no-self-update $RUST_VERSION && rustup default $RUST_VERSION
-      - name: Build server
-        working-directory: server
-        run: cargo build --release
+      - uses: DeterminateSystems/nix-installer-action@main
+      - uses: DeterminateSystems/magic-nix-cache-action@main
+      - name: Build site
+        run: nix build .#server
       - name: Archive binary
         uses: actions/upload-artifact@v4
         with:
           name: ofcrse
-          path: server/target/release/ofcrse
+          path: result/bin/ofcrse
 
   deploy:
     name: Deploy site
