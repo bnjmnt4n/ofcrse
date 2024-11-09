@@ -184,7 +184,6 @@ fn initialize_app(app: Router, app_state: AppState, path: &str) -> Router {
 
     let client = hyper_util::client::legacy::Client::builder(TokioExecutor::new())
         .pool_idle_timeout(Duration::from_secs(30))
-        .http2_only(false)
         .build(https_connector);
 
     let primary_app = primary_router().with_state(PrimaryAppState {
