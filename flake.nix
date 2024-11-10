@@ -48,9 +48,7 @@
           npmBuildScript = "build";
         });
 
-        rust = pkgs.rust-bin.stable.latest.default.override {
-          extensions = [ "rust-src" "rustfmt" "rust-analyzer" ];
-        };
+        rust = pkgs.rust-bin.stable.latest.default;
 
         craneLib = (crane.mkLib pkgs).overrideToolchain rust;
 
@@ -59,7 +57,7 @@
           strictDeps = true;
 
           nativeBuildInputs = [ pkgs.pkg-config ];
-          buildInputs = [ pkgs.openssl ] ++ pkgs.lib.optionals pkgs.stdenv.isDarwin [
+          buildInputs = pkgs.lib.optionals pkgs.stdenv.isDarwin [
             pkgs.darwin.apple_sdk.frameworks.Security
             pkgs.libiconv
           ];
@@ -68,13 +66,38 @@
         server = craneLib.buildPackage (cranePackageCommonArgs // {
           cargoArtifacts = craneLib.buildDepsOnly cranePackageCommonArgs;
         });
+
+        # TODO: Setup cross compilation? Probably not required...
+        dockerImageCommonArgs = {
+          tag = self.rev or self.dirtyRev or "latest";
+          contents = [
+            # Debugging utilities for `fly ssh console`
+            pkgs.busybox
+            # Now required by the fly.io sshd
+            pkgs.dockerTools.fakeNss
+            server
+          ];
+          config = {
+            Cmd = [ "${server}/bin/ofcrse" ];
+            WorkingDir = "/";
+          };
+        };
+        dockerImage = pkgs.dockerTools.streamLayeredImage (dockerImageCommonArgs // {
+          name = "registry.fly.io/ofcrse";
+          contents = dockerImageCommonArgs.contents ++ [ site ];
+        });
+        dockerImageDev = pkgs.dockerTools.streamLayeredImage (dockerImageCommonArgs // {
+          name = "registry.fly.io/ofcrse-dev";
+          tag = self.rev or self.dirtyRev or "latest";
+          contents = dockerImageCommonArgs.contents ++ [ siteDev ];
+        });
       in
       {
         checks."${system}" = {
           inherit site siteDev server;
         };
         packages."${system}" = {
-          inherit site siteDev server;
+          inherit site siteDev server dockerImage dockerImageDev;
           default = server;
         };
 
@@ -82,6 +105,10 @@
           checks = self.checks."${system}";
 
           packages = [
+            (rust.override {
+              extensions = [ "rust-src" "rustfmt" "rust-analyzer" ];
+            })
+            pkgs.dive
             pkgs.flyctl
             pkgs.nodejs
             pkgs.nodePackages."@astrojs/language-server"
