@@ -93,16 +93,16 @@
         });
       in
       {
-        checks."${system}" = {
+        checks.${system} = {
           inherit site siteDev server;
         };
-        packages."${system}" = {
+        packages.${system} = {
           inherit site siteDev server dockerImage dockerImageDev;
           default = server;
         };
 
-        devShells."${system}".default = craneLib.devShell {
-          checks = self.checks."${system}";
+        devShells.${system}.default = craneLib.devShell {
+          checks = self.checks.${system};
 
           packages = [
             (rust.override {
