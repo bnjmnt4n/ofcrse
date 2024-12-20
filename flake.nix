@@ -36,7 +36,7 @@
             runHook postInstall
           '';
 
-          npmDepsHash = "sha256-Y8TZqclpKuTvLbOkEgB6rI0Y+p70ftkgdjeU/UwaxJ4=";
+          npmDepsHash = "sha256-ZOWc5u59hUc5O+oZT2E/udwt0n+xL5Eyrb8AYpD1yQY=";
         };
 
         siteDev = pkgs.buildNpmPackage (npmPackageCommonArgs // {
