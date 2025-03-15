@@ -172,7 +172,7 @@ fn unwrap_infallible<T>(result: Result<T, Infallible>) -> T {
 fn get_header<'a>(headers: &'a HeaderMap, header_name: &'static str) -> Option<&'a str> {
     headers
         .get(header_name)
-        .and_then(|header_value| header_value.to_str().map_or(None, Some))
+        .and_then(|header_value| header_value.to_str().ok())
 }
 
 type Client = hyper_util::client::legacy::Client<HttpsConnector<HttpConnector>, Body>;
@@ -332,9 +332,7 @@ async fn goatcounter_proxy(
         .or_else(|| {
             req.extensions()
                 .get::<ConnectInfo<SocketAddr>>()
-                .and_then(|ConnectInfo(addr)| {
-                    HeaderValue::from_str(&addr.to_string()).map_or(None, Some)
-                })
+                .and_then(|ConnectInfo(addr)| HeaderValue::from_str(&addr.to_string()).ok())
         })
         .and_then(|addr| req.headers_mut().insert("X-Real-IP", addr));
 

@@ -32,7 +32,7 @@ impl HttpError {
             error!("No Backtrace");
         }
 
-        let trace_content = if is_production() {
+        let trace_content = if *is_production() {
             "".into()
         } else {
             let mut err_string = String::new();
@@ -92,7 +92,7 @@ pub fn read_error_file_contents() {
 
 fn error_404_contents() -> &'static [u8] {
     static ERROR_404: OnceLock<Vec<u8>> = OnceLock::new();
-    &ERROR_404.get_or_init(|| {
+    ERROR_404.get_or_init(|| {
         let file = std::fs::File::open("dist/404.html").expect("could not open 404 file");
         let mut reader = BufReader::new(file);
         let mut contents = vec![];
@@ -103,7 +103,7 @@ fn error_404_contents() -> &'static [u8] {
 
 fn error_500_contents() -> &'static str {
     static ERROR_500: OnceLock<String> = OnceLock::new();
-    &ERROR_500.get_or_init(|| {
+    ERROR_500.get_or_init(|| {
         let file = std::fs::File::open("dist/404.html").expect("could not open 500 file");
         let mut reader = BufReader::new(file);
         let mut contents = String::new();
@@ -135,8 +135,11 @@ impl IntoResponse for HttpError {
     }
 }
 
-fn is_production() -> bool {
-    std::env::var("FLY_APP_NAME")
-        .map(|app_name| app_name == "ofcrse")
-        .unwrap_or(false)
+fn is_production() -> &'static bool {
+    static IS_PRODUCTION: OnceLock<bool> = OnceLock::new();
+    IS_PRODUCTION.get_or_init(|| {
+        std::env::var("FLY_APP_NAME")
+            .map(|app_name| app_name == "ofcrse")
+            .unwrap_or(false)
+    })
 }
