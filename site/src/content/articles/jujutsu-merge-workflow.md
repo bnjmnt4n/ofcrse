@@ -98,7 +98,7 @@ Parent commit      : [1m[38;5;5mqkl[0m[38;5;8myrnvv[39m [1m[38;5;4m579e[
 Added 0 files, modified 14 files, removed 0 files
 ```
 
-This creates a new merge commit with the change ID of `orl`, with the 2 parents specified. Note that you can specify as many parents as you want, and Jujutsu can still merge them. (I'm only specifying 2 here, so I can add more later manually.) Here's what the commit graph looks like at this point:
+This creates a new merge commit with the change ID of `orl`, with the 2 parents specified. Note that you can specify as many parents as you want, and Jujutsu can still merge them. (I'm only specifying 2 here, so I can add more manually later.) Here's what the commit graph looks like at this point:
 
 ```ansi
 [0;1m[32m❯[0m [34mjj[39m [36mlog[39m
@@ -119,7 +119,7 @@ This creates a new merge commit with the change ID of `orl`, with the 2 parents 
 
 *Merge commits*, you might be wondering. *Is that a new workflow? Can't you just use Git for this?*
 
-Merge commits definitely aren't anything new—nearly every modern VCS tool has merge commits. However, Jujutsu's support for manipulating the commit graph is miles ahead of Git's. With Jujutsu, you can merge commits without fear of modifying your repository to an unrecoverable state. Jujutsu's [first-class conflicts][jj-conflicts] and [`jj undo`][jj-undo] makes it safe to merge different branches, play around with different configurations of your code, and then restore your original changes.
+Merge commits definitely aren't anything new—nearly every modern VCS tool has merge commits. However, Jujutsu's support for manipulating the commit graph is miles ahead of Git's. With Jujutsu, you can merge commits without fear of leaving your repository in an unrecoverable state. Jujutsu's [first-class conflicts][jj-conflicts] and [`jj undo`][jj-undo] makes it safe to merge different branches, play around with different configurations of your code, and then restore your original changes.
 
 Whether you find this article useful likely depends on how you're using your VCS right now. If you're just building a linear stack of commits, then this is probably not going to be very helpful. However, if you use separate branches to work on different features and group commits together for code review, then you might find this useful. (If you've read [Jackson Gabbard's article on Stacked Diffs vs Pull Requests][stacked-diff-vs-pr], I like to think that this workflow allows you to enjoy the benefits of a Stacked Diff-like workflow of working on a single branch, but still allows you to work with code forges like GitHub which expect a Pull Request-style workflow.)
 
